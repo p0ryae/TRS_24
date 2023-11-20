@@ -1,0 +1,30 @@
+[package]
+name = "trs_24"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4"
+winit = { version = "0.28.7", features = ["android-native-activity"] }
+glutin = { path = "/home/porya/glutin/glutin/"}
+raw-window-handle = "0.5.0"
+android_logger = "0.13.3"
+
+[build-dependencies]
+gl_generator = "0.14"
+cfg_aliases = "0.1.1"
+
+[lib]
+name = "trs_24"
+crate-type = ["cdylib"]
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+strip = true
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3

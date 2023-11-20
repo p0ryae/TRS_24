@@ -1,0 +1,9 @@
+[target.arm-linux-androideabi]
+ar="/home/porya/Android/Sdk/ndk/android-ndk-r16b/build/tools/arm/bin/arm-linux-androideabi-ar"
+linker="/home/porya/Android/Sdk/ndk/android-ndk-r16b/build/tools/arm/bin/arm-linux-androideabi-clang"
+
+[target.x86_64-linux-android]
+linker="/home/porya/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang"
+rustflags = [
+    "-C", "link-arg=-L/home/porya/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/lib/"
+]
