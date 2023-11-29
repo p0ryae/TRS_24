@@ -1,4 +1,3 @@
-use std::ffi::{CStr, CString};
 use std::num::NonZeroU32;
 
 use raw_window_handle::{
@@ -16,148 +15,8 @@ use glutin::display::{Display, DisplayApiPreference};
 use glutin::prelude::*;
 use glutin::surface::{SurfaceAttributesBuilder, WindowSurface};
 
-#[rustfmt::skip]
-static VERTEX_DATA: [f32; 15] = [
-    -0.5, -0.5,  1.0,  0.0,  0.0,
-     0.0,  0.5,  0.0,  1.0,  0.0,
-     0.5, -0.5,  0.0,  0.0,  1.0,
-];
-
-const VERTEX_SHADER_SOURCE: &[u8] = include_bytes!("shader-vert.glsl");
-const FRAGMENT_SHADER_SOURCE: &[u8] = include_bytes!("shader-frag.glsl");
-
-pub mod gl {
-    #![allow(clippy::all)]
-    include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
-
-    pub use Gles2 as Gl;
-}
-
-unsafe fn create_shader(
-    gl: &gl::Gl,
-    shader: gl::types::GLenum,
-    source: &[u8],
-) -> gl::types::GLuint {
-    let shader = gl.CreateShader(shader);
-    let len = source.len() as gl::types::GLint;
-    gl.ShaderSource(shader, 1, [source.as_ptr().cast()].as_ptr(), &len);
-    gl.CompileShader(shader);
-    shader
-}
-
-fn get_gl_string(gl: &gl::Gl, variant: gl::types::GLenum) -> Option<&'static CStr> {
-    unsafe {
-        let s = gl.GetString(variant);
-        (!s.is_null()).then(|| CStr::from_ptr(s.cast()))
-    }
-}
-
-pub struct Renderer {
-    program: gl::types::GLuint,
-    vbo: gl::types::GLuint,
-    gl: gl::Gl,
-}
-
-impl Renderer {
-    pub fn new(gl_display: &Display) -> Self {
-        unsafe {
-            let gl = gl::Gl::load_with(|symbol| {
-                let symbol = CString::new(symbol).unwrap();
-                gl_display.get_proc_address(symbol.as_c_str()).cast()
-            });
-
-            if let Some(renderer) = get_gl_string(&gl, gl::RENDERER) {
-                println!("Running on {}", renderer.to_string_lossy());
-            }
-            if let Some(version) = get_gl_string(&gl, gl::VERSION) {
-                println!("OpenGL Version {}", version.to_string_lossy());
-            }
-
-            if let Some(shaders_version) = get_gl_string(&gl, gl::SHADING_LANGUAGE_VERSION) {
-                println!("Shaders version on {}", shaders_version.to_string_lossy());
-            }
-
-            let vertex_shader = create_shader(&gl, gl::VERTEX_SHADER, VERTEX_SHADER_SOURCE);
-            let fragment_shader = create_shader(&gl, gl::FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE);
-
-            let program = gl.CreateProgram();
-
-            gl.AttachShader(program, vertex_shader);
-            gl.AttachShader(program, fragment_shader);
-
-            gl.LinkProgram(program);
-
-            gl.UseProgram(program);
-
-            gl.DeleteShader(vertex_shader);
-            gl.DeleteShader(fragment_shader);
-
-            let mut vbo = std::mem::zeroed();
-            gl.GenBuffers(1, &mut vbo);
-            gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
-            gl.BufferData(
-                gl::ARRAY_BUFFER,
-                (VERTEX_DATA.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-                VERTEX_DATA.as_ptr() as *const _,
-                gl::STATIC_DRAW,
-            );
-
-            let pos_attrib = gl.GetAttribLocation(program, b"position\0".as_ptr() as *const _);
-            let color_attrib = gl.GetAttribLocation(program, b"color\0".as_ptr() as *const _);
-            gl.VertexAttribPointer(
-                pos_attrib as gl::types::GLuint,
-                2,
-                gl::FLOAT,
-                0,
-                5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
-                std::ptr::null(),
-            );
-            gl.VertexAttribPointer(
-                color_attrib as gl::types::GLuint,
-                3,
-                gl::FLOAT,
-                0,
-                5 * std::mem::size_of::<f32>() as gl::types::GLsizei,
-                (2 * std::mem::size_of::<f32>()) as *const () as *const _,
-            );
-            gl.EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
-            gl.EnableVertexAttribArray(color_attrib as gl::types::GLuint);
-
-            Self {
-                program,
-                vbo,
-                gl,
-            }
-        }
-    }
-
-    pub fn draw(&self) {
-        unsafe {
-            self.gl.UseProgram(self.program);
-
-            self.gl.BindBuffer(gl::ARRAY_BUFFER, self.vbo);
-
-            self.gl.ClearColor(0.1, 0.1, 0.1, 0.9);
-            self.gl.Clear(gl::COLOR_BUFFER_BIT);
-            self.gl.DrawArrays(gl::TRIANGLES, 0, 3);
-        }
-    }
-
-    pub fn resize(&self, width: i32, height: i32) {
-        unsafe {
-            self.gl.Viewport(0, 0, width, height);
-        }
-    }
-}
-
-impl Drop for Renderer {
-    fn drop(&mut self) {
-        unsafe {
-            self.gl.DeleteProgram(self.program);
-            self.gl.DeleteBuffers(1, &self.vbo);
-        }
-    }
-}
+mod renderer;
+use crate::renderer::renderer::Renderer;
 
 struct SurfaceState {
     window: winit::window::Window,
@@ -190,10 +49,7 @@ impl App {
         raw_display: RawDisplayHandle,
         raw_window_handle: RawWindowHandle,
     ) -> Display {
-        let preference = DisplayApiPreference::Egl;
-
-        // Create connection to underlying OpenGL client Api.
-        unsafe { Display::new(raw_display, preference).unwrap() }
+        unsafe { Display::new(raw_display, DisplayApiPreference::Egl).unwrap() }
     }
 
     fn ensure_glutin_display(&mut self, window: &winit::window::Window) {
@@ -228,7 +84,6 @@ impl App {
         }
     }
 
-    /// Create template to find OpenGL config.
     pub fn config_template(raw_window_handle: RawWindowHandle) -> ConfigTemplate {
         let builder = ConfigTemplateBuilder::new()
             .with_alpha_size(8)
@@ -242,8 +97,7 @@ impl App {
     fn ensure_surface_and_context<T>(&mut self, event_loop: &EventLoopWindowTarget<T>) {
         let window = winit::window::Window::new(&event_loop).unwrap();
         let raw_window_handle = window.raw_window_handle();
-        
-        // Lazily initialize, egl, wgl, glx etc
+
         self.ensure_glutin_display(&window);
         let glutin_display = self
             .glutin_display
@@ -344,6 +198,7 @@ fn run(event_loop: EventLoop<()>) {
 
     let raw_display = event_loop.raw_display_handle();
     let mut app = App::new(raw_display);
+    let mut active_touch_events: Vec<winit::event::Touch> = Vec::new();
 
     event_loop.run(move |event, event_loop, control_flow| {
         log::trace!("Received Winit event: {event:?}");
@@ -357,27 +212,39 @@ fn run(event_loop: EventLoop<()>) {
                 log::trace!("Suspended, dropping surface state...");
                 app.surface_state = None;
             }
-            Event::WindowEvent {
-                event: WindowEvent::Resized(_size),
-                ..
-            } => {
-                // Winit: doesn't currently implicitly request a redraw
-                // for a resize which may be required on some platforms...
-                app.queue_redraw();
-            }
             Event::RedrawRequested(_) => {
                 log::trace!("Handling Redraw Request");
 
                 if let Some(ref surface_state) = app.surface_state {
                     if let Some(ctx) = &app.context {
-                        if let Some(ref renderer) = app.render_state {
-                            renderer.draw();
+                        if let Some(ref mut renderer) = app.render_state {
+                            let (width, height): (u32, u32) =
+                                surface_state.window.inner_size().into();
+                            renderer.draw(width.try_into().unwrap(), height.try_into().unwrap());
                             if let Err(err) = surface_state.surface.swap_buffers(ctx) {
                                 log::error!("Failed to swap buffers after render: {}", err);
                             }
                         }
                         app.queue_redraw();
                     }
+                }
+            }
+            Event::WindowEvent {
+                event: WindowEvent::Touch(location),
+                ..
+            } => {
+                match location.phase {
+                    winit::event::TouchPhase::Started => {
+                        active_touch_events.push(location);
+                    }
+                    winit::event::TouchPhase::Ended => {
+                        active_touch_events.retain(|&t| t.id != location.id);
+                    }
+                    _ => {}
+                }
+
+                if active_touch_events.len() == 2 {
+                    println!("Two fingers used: {:?}", active_touch_events);
                 }
             }
             Event::WindowEvent {

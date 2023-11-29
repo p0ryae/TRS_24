@@ -2,7 +2,7 @@
     <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="19"/>
     <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
     <application android:debuggable="true" android:hasCode="false" android:label="TRS 24" android:hardwareAccelerated="true">
-        <activity android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" android:name="android.app.NativeActivity">
+        <activity android:keepScreenOn="true" android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" android:screenOrientation="landscape" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" android:name="android.app.NativeActivity">
             <meta-data android:name="android.app.lib_name" android:value="trs_24"/>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
