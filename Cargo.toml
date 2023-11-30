@@ -2,12 +2,20 @@
 name = "trs_24"
 version = "0.1.0"
 edition = "2021"
+keywords = ["gamedev", "graphics", "android", "trs_24", "engine"]
+license = "MIT OR Apache-2.0"
+description = "An OpenGL-Powered Android Game Engine"
+repository = "https://github.com/p0ryae/TRS_24"
+exclude = [
+    "assets/*",
+    "android/*"
+]
 
 [dependencies]
 log = "0.4"
 winit = { version = "0.28.7", features = ["android-native-activity"] }
 # My personal glutin fork that includes a GLES2 patch (Will replace once merged to main repo)
-glutin = { git = "https://github.com/p0ryae/glutin" }
+glutin = { git = "https://github.com/p0ryae/glutin", version = "0.31.1" }
 raw-window-handle = "0.5.0"
 android_logger = "0.13.3"
 stb_image_rust = "2.27.2"
