@@ -5,6 +5,6 @@
 [![Downloads](https://img.shields.io/crates/d/trs_24.svg)](https://crates.io/crates/trs_24)
 [![Docs](https://docs.rs/trs_24/badge.svg)](https://docs.rs/bevy/latest/trs_24/)
 
-An OpenGL-Powered Android Game Engine (GLES 2.0+).
+An OpenGL-Powered Game Engine in Rust (OpenGL 2.0+).
 
 
