@@ -1,3 +1,4 @@
+use crate::overture;
 use crate::renderer::camera;
 use crate::renderer::get_gl_string;
 use crate::renderer::gl;
@@ -6,19 +7,27 @@ use crate::renderer::shader;
 
 use glutin::display::Display;
 use glutin::prelude::*;
-use std::ffi::CString;
+
+pub struct Model {
+    gltf_file: &'static [u8],
+    bin_file: &'static [u8],
+    texture_file: &'static [u8],
+    position: overture::Vec3,
+    scale: overture::Vec3,
+    rotation: f32,
+}
 
 pub struct Renderer {
     program: gl::types::GLuint,
     gl: gl::Gl,
-    models: Vec<model::Model>,
+    models: Vec<model::model::Model>,
 }
 
 impl Renderer {
-    pub fn new(gl_display: &Display) -> Self {
+    pub fn new(gl_display: &Display, not_ready_models: &Vec<Model>) -> Self {
         unsafe {
             let gl = gl::Gl::load_with(|symbol| {
-                let symbol = CString::new(symbol).unwrap();
+                let symbol = std::ffi::CString::new(symbol).unwrap();
                 gl_display.get_proc_address(symbol.as_c_str()).cast()
             });
 
@@ -39,40 +48,31 @@ impl Renderer {
 
             let mut models = Vec::new();
 
-            /*
-            let mut x1 = model::Model::new(
-                gl.clone(),
-                program,
-                include_bytes!("../../assets/models/scene/scene.gltf"),
-                include_bytes!("../../assets/models/scene/scene.bin")
-            );
-            x1.set_position(nalgebra_glm::vec3(1.0, 0.0, 0.0));
-            x1.set_scale(nalgebra_glm::vec3(0.02, 0.02, 0.02));
-            x1.set_rotation(nalgebra_glm::quat_angle_axis(80.0, &nalgebra_glm::vec3(0.0, 1.0, 0.0)));
-            models.push(x1);
-            */
+            for model in not_ready_models {
+                let mut x = model::model::Model::new(
+                    gl.clone(),
+                    program,
+                    model.gltf_file,
+                    model.bin_file,
+                    model.texture_file,
+                );
+                x.set_position(nalgebra_glm::vec3(
+                    model.position.x,
+                    model.position.y,
+                    model.position.z,
+                ));
+                x.set_scale(nalgebra_glm::vec3(
+                    model.scale.x,
+                    model.scale.y,
+                    model.scale.z,
+                ));
+                x.set_rotation(nalgebra_glm::quat_angle_axis(
+                    model.rotation,
+                    &nalgebra_glm::vec3(0.0, 1.0, 0.0),
+                ));
 
-            let mut x2 = model::Model::new(
-                gl.clone(),
-                program,
-                include_bytes!("../../assets/models/scene2/scene.gltf"),
-                include_bytes!("../../assets/models/scene2/scene.bin"),
-                include_bytes!("../../assets/models/scene2/Material.001_baseColor.png")
-            );
-            x2.set_position(nalgebra_glm::vec3(-0.5, 0.0, 0.0));
-            x2.set_scale(nalgebra_glm::vec3(0.09, 0.09, 0.09));
-            models.push(x2);
-
-            let mut x3 = model::Model::new(
-                gl.clone(),
-                program,
-                include_bytes!("../../assets/models/scene3/scene.gltf"),
-                include_bytes!("../../assets/models/scene3/scene.bin"),
-                include_bytes!("../../assets/models/scene3/texture.png")
-            );
-            x3.set_position(nalgebra_glm::vec3(0.7, -0.5, 0.0));
-            x3.set_scale(nalgebra_glm::vec3(0.007, 0.007, 0.007));
-            models.push(x3);
+                models.push(x);
+            }
 
             Self {
                 program,
@@ -82,9 +82,10 @@ impl Renderer {
         }
     }
 
-    pub fn draw(&mut self, width: i32, height: i32) {
+    pub fn draw(&mut self, width: i32, height: i32, world_color: &overture::RGBA) {
         unsafe {
-            self.gl.ClearColor(0.4, 0.0, 1.0, 1.0);
+            self.gl
+                .ClearColor(world_color.r, world_color.g, world_color.b, world_color.a);
             self.gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
             camera::adjust(
@@ -101,6 +102,24 @@ impl Renderer {
                 model.draw();
             }
         }
+    }
+
+    pub fn new_model(
+        gltf_file: &'static [u8],
+        bin_file: &'static [u8],
+        texture_file: &'static [u8],
+        position: overture::Vec3,
+        scale: overture::Vec3,
+        rotation: f32,
+    ) -> Model {
+        return Model {
+            gltf_file,
+            bin_file,
+            texture_file,
+            position,
+            scale,
+            rotation,
+        };
     }
 
     // Not needed, since the engine prefers landscape mode by default

@@ -14,7 +14,8 @@ exclude = [
 [dependencies]
 log = "0.4"
 winit = { version = "0.28.7", features = ["android-native-activity"] }
-# My personal glutin fork that includes a GLES2 patch (Will replace once merged to main repo)
+# My personal glutin fork that includes a GLES2 patch
+# Will replace this with the main repo once my purposed change is merged (See https://github.com/rust-windowing/glutin/pull/1648).
 glutin = { git = "https://github.com/p0ryae/glutin", version = "0.31.1" }
 raw-window-handle = "0.5.0"
 android_logger = "0.13.3"
@@ -25,11 +26,3 @@ json = "0.12.4"
 [build-dependencies]
 gl_generator = "0.14"
 cfg_aliases = "0.1.1"
-
-[lib]
-name = "trs_24"
-crate-type = ["cdylib"]
-
-[profile.dev]
-opt-level = 1
-strip = true

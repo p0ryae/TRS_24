@@ -6,9 +6,6 @@ use cfg_aliases::cfg_aliases;
 use gl_generator::{Api, Fallbacks, Profile, Registry, StructGenerator};
 
 fn main() {
-    // Path to NDK toolchain libraries
-    println!("cargo:rustc-link-search=/home/porya/Android/Sdk/ndk/android-ndk-r16b/build/tools/arm/lib/");
-
     cfg_aliases! {
         android: { target_os = "android" },
         egl_backend: { all(feature = "egl", any(windows, unix), not(apple), not(wasm)) },

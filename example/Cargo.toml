@@ -1,0 +1,21 @@
+[package]
+name = "trs_example"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+trs_24 = { path = "/home/porya/Github/TRS_24/" }
+
+[lib]
+name = "trs_example"
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "trs_example"
+path = "src/main.rs"
+
+[profile.dev]
+opt-level = 1
+strip = true
