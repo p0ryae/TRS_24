@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-trs_24 = { path = "/home/porya/Github/TRS_24/" }
+trs_24 = { path = "../" }
 
 [lib]
 name = "trs_example"
