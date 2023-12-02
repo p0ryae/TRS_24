@@ -195,6 +195,12 @@ pub mod overture {
         ) {
             log::trace!("Running mainloop...");
 
+            #[cfg(not(target_os = "android"))]
+            if std::env::var("MESA_GLES_VERSION_OVERRIDE").is_err() {
+                // Fallback to GLES version 2.0 for test runs (mesa drivers particularly)
+                std::env::set_var("MESA_GLES_VERSION_OVERRIDE", "2.0");
+            }
+
             let raw_display = event_loop.raw_display_handle();
             let mut app = App::new(raw_display);
             let mut active_touch_events: Vec<winit::event::Touch> = Vec::new();
