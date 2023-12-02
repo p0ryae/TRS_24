@@ -284,14 +284,15 @@ pub mod overture {
             RGBA { r, g, b, a }
         }
     }
+
+    pub use winit::event_loop::EventLoopBuilder;
+    #[cfg(target_os = "android")]
+    pub use winit::platform::android::activity::AndroidApp;
+    #[cfg(target_os = "android")]
+    pub use winit::platform::android::EventLoopBuilderExtAndroid;
 }
 
 #[cfg(target_os = "android")]
 pub use android_logger;
-pub use winit::event_loop::EventLoopBuilder;
-#[cfg(target_os = "android")]
-pub use winit::platform::android::activity::AndroidApp;
-#[cfg(target_os = "android")]
-pub use winit::platform::android::EventLoopBuilderExtAndroid;
 
 pub use renderer::renderer::Renderer;

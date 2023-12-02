@@ -1,17 +1,9 @@
-/**
- * This file is used for generating the .so file for bundling.
- * The .so file generated when building will then be used for creating the apk.
- * Ensure you keep the target_os to android, otherwise you'll run to issues.
- * For a more detailed explination of each line
- */
+#![cfg(target_os = "android")]
 
-#[cfg(target_os = "android")]
-use trs_24::{android_logger, overture::*, AndroidApp, EventLoopBuilder};
+use trs_24::{android_logger, overture::*};
 
-#[cfg(target_os = "android")]
+#[no_mangle]
 pub fn android_main(app: AndroidApp) {
-    use trs_24::EventLoopBuilderExtAndroid;
-
     android_logger::init_once(android_logger::Config::default());
 
     // Creates an event loop for android platforms only.

@@ -4,11 +4,10 @@
  * The goal of this is to speed up the testing process. You won't have to do builds every time to test something.
  */
 use trs_24::overture::*;
-use trs_24::EventLoopBuilder;
 
 pub fn main() {
     // WARNING: Avoid using this event_loop definition for lib.rs file.
-    // Creates an event loop for desktop platforms only.
+    // Creates an event loop for non-android platforms.
     let event_loop = EventLoopBuilder::new().build();
 
     // Creates an empty mutable vector named models
