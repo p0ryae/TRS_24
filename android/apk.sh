@@ -4,21 +4,26 @@
 
 # Can be one of: arm-linux-androideabi, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android, aarch64-linux-android, thumbv7neon-linux-androideabi
 # For more information on which to pick, visit: https://doc.rust-lang.org/rustc/platform-support.html
-ARCH="arm-linux-androideabi"
+ARCH=""
 
 # Can be one of: x86, x86_64, armeabi, armeabi-v7a, arm64-v8a
-ARCH_LIB="armeabi" 
+ARCH_LIB="" 
 
 # Replace this with your actual SDK build-tools path
-SDK_TOOLCHAIN_PATH="/home/porya/Android/Sdk/build-tools/34.0.0" 
+SDK_TOOLCHAIN_PATH="" 
 
 # Your app name
-# Ensure this matches with your Cargo.toml's [package] --> name
-APP_NAME="trs_24"
+# Ensure this MATCHES with your Cargo.toml's [package] --> name
+# AVOID WHITESPACES!
+APP_NAME=""
+
+# Your app lebel
+# Having whitespaces is allowed
+APP_LEBEL=""
 
 # Keystore password used for signing the APK
 # ! - Be cautious about sharing this password - !
-KEYSTORE_PASSWORD="123456"
+KEYSTORE_PASSWORD=""
 
 # ------------------------------- #
 
@@ -47,6 +52,9 @@ else
 
 APP_NAME_LOWERCASED=$(echo $APP_NAME | tr '[A-Z]' '[a-z]'])
 
+sed -i 's/LIBNAME/'"$APP_NAME_LOWERCASED"'/g' AndroidManifest.xml
+sed -i 's/APPLABEL/'"$APP_LEBEL"'/g' AndroidManifest.xml
+
 "$SDK_TOOLCHAIN_PATH/aapt" package -f -F "../target/packaged/$APP_NAME_LOWERCASED-unsigned.apk" -M "AndroidManifest.xml" -I "./android.jar"
 
 if [ -f "../target/$ARCH/debug/lib$APP_NAME_LOWERCASED.so" ]; then
@@ -66,6 +74,11 @@ if [ -f "../target/$ARCH/debug/lib$APP_NAME_LOWERCASED.so" ]; then
     
     # The line below is optional and used for waking the android screen
     adb shell input keyevent KEYCODE_WAKE
+
+    
+    sed -i 's/'"$APP_NAME_LOWERCASED"'/LIBNAME/g' AndroidManifest.xml
+
+    sed -i 's/'"$APP_LEBEL"'/APPLABEL/g' AndroidManifest.xml
 else
     echo "File 'lib$APP_NAME_LOWERCASED.so' does not exist."
 fi
