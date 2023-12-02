@@ -9,11 +9,10 @@ edition = "2021"
 trs_24 = { path = "../" }
 
 [lib]
-name = "trs_example"
 crate-type = ["cdylib"]
 
 [[bin]]
-name = "trs_example"
+name = "test"
 path = "src/main.rs"
 
 [profile.dev]
