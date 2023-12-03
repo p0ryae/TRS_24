@@ -13,7 +13,7 @@ It aims to ease game development on Android platforms, focusing on ensuring comp
 The engine supports OpenGL ES 2.0 graphics API, allowing compatibility with a broad range of Android devices, even those with older hardware. 
 Moreover, The process for bundling `.apk` for Android shipment has been significantly untangled.
 
-## Getting started
+## Getting Started
 Fundamentally, using two files is the ideal approach for using the engine. Primary file `lib.rs` soley used for running the window on Android and building a shared object (*.so).
 Secondary file `main.rs` solely used for testing purposes on the host machine. Both of these files need to be in the `src` directory.
 
@@ -31,7 +31,7 @@ Both files will have their own respectable structure:
 
 - Structure for `lib.rs`:
    
-⚠️ Notice the nessesity of `#![cfg(target_os = "android")]` at the 1st line of the file, and the `#[no_mangle]` attribute before the `android_main` function. They NEED to exist, otherwise you'll run to errors and crashes for compliation and building, respectively.
+⚠️ Notice the necessity of `#![cfg(target_os = "android")]` at the 1st line of the file, and the `#[no_mangle]` attribute before the `android_main` function. They NEED to exist, otherwise you'll run to errors and crashes for compliation and building, respectively.
 
 ```rust
 #![cfg(target_os = "android")]
