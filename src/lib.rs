@@ -2,10 +2,12 @@
 
 pub mod renderer;
 
-#[allow(dead_code)]
+#[cfg(target_os = "android")]
+pub use android_logger;
+
 pub mod overture {
-    use crate::renderer;
-    use crate::renderer::renderer::Renderer;
+    use crate::renderer::Renderer;
+    use crate::renderer::Model;
     use glutin::config::{Config, ConfigSurfaceTypes, ConfigTemplate, ConfigTemplateBuilder};
     use glutin::context::{ContextApi, ContextAttributesBuilder, NotCurrentContext};
     use glutin::display::{Display, DisplayApiPreference};
@@ -161,7 +163,7 @@ pub mod overture {
             self.surface_state = Some(surface_state);
         }
 
-        fn ensure_renderer(&mut self, models: &Vec<renderer::renderer::Model>) {
+        fn ensure_renderer(&mut self, models: &Vec<Model>) {
             let glutin_display = self
                 .glutin_display
                 .as_ref()
@@ -180,7 +182,7 @@ pub mod overture {
         fn resume<T>(
             &mut self,
             event_loop: &EventLoopWindowTarget<T>,
-            models: &Vec<renderer::renderer::Model>,
+            models: &Vec<Model>,
         ) {
             log::trace!("Resumed, creating render state...");
             self.ensure_surface_and_context(event_loop);
@@ -191,7 +193,7 @@ pub mod overture {
         pub fn run(
             event_loop: EventLoop<()>,
             world_color: RGBA,
-            models: Vec<renderer::renderer::Model>,
+            models: Vec<Model>,
         ) {
             log::trace!("Running mainloop...");
 
@@ -297,8 +299,3 @@ pub mod overture {
     #[cfg(target_os = "android")]
     pub use winit::platform::android::EventLoopBuilderExtAndroid;
 }
-
-#[cfg(target_os = "android")]
-pub use android_logger;
-
-pub use renderer::renderer::Renderer;

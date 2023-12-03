@@ -29,7 +29,7 @@ path = "src/main.rs"
 ```
 Both files will have their own respectable structure:
 
-Structure for `lib.rs`:
+- Structure for `lib.rs`:
    
 ⚠️ Notice the nessesity of `#![cfg(target_os = "android")]` at the 1st line of the file, and the `#[no_mangle]` attribute before the `android_main` function. They NEED to exist, otherwise you'll run to errors and crashes for compliation and building, respectively.
 
@@ -51,7 +51,7 @@ pub fn android_main(app: AndroidApp) {
 }
 ```
 
-Structure for `main.rs`:
+- Structure for `main.rs`:
 ```rust
 use trs_24::overture::*;
 

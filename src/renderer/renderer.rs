@@ -1,6 +1,5 @@
 use crate::overture;
 use crate::renderer::camera;
-use crate::renderer::get_gl_string;
 use crate::renderer::gl;
 use crate::renderer::model;
 use crate::renderer::shader;
@@ -8,28 +7,27 @@ use crate::renderer::shader;
 use glutin::display::Display;
 use glutin::prelude::*;
 
-pub struct Model {
-    gltf_file: &'static [u8],
-    bin_file: &'static [u8],
-    texture_file: &'static [u8],
-    position: overture::Vec3,
-    scale: overture::Vec3,
-    rotation: f32,
-}
-
 pub struct Renderer {
     program: gl::types::GLuint,
     gl: gl::Gl,
-    models: Vec<model::model::Model>,
+    models: Vec<model::ReadyModel>,
 }
 
 impl Renderer {
-    pub fn new(gl_display: &Display, not_ready_models: &Vec<Model>) -> Self {
+    pub fn new(gl_display: &Display, not_ready_models: &Vec<model::Model>) -> Self {
         unsafe {
             let gl = gl::Gl::load_with(|symbol| {
                 let symbol = std::ffi::CString::new(symbol).unwrap();
                 gl_display.get_proc_address(symbol.as_c_str()).cast()
             });
+
+            unsafe fn get_gl_string(
+                gl: &gl::Gl,
+                variant: gl::types::GLenum,
+            ) -> Option<&'static std::ffi::CStr> {
+                let s = gl.GetString(variant);
+                (!s.is_null()).then(|| std::ffi::CStr::from_ptr(s.cast()))
+            }
 
             if let Some(renderer) = get_gl_string(&gl, gl::RENDERER) {
                 println!("Running on {}", renderer.to_string_lossy());
@@ -49,7 +47,7 @@ impl Renderer {
             let mut models = Vec::new();
 
             for model in not_ready_models {
-                let mut x = model::model::Model::new(
+                let mut x = model::ReadyModel::new(
                     gl.clone(),
                     program,
                     model.gltf_file,
@@ -104,29 +102,11 @@ impl Renderer {
         }
     }
 
-    pub fn new_model(
-        gltf_file: &'static [u8],
-        bin_file: &'static [u8],
-        texture_file: &'static [u8],
-        position: overture::Vec3,
-        scale: overture::Vec3,
-        rotation: f32,
-    ) -> Model {
-        return Model {
-            gltf_file,
-            bin_file,
-            texture_file,
-            position,
-            scale,
-            rotation,
-        };
-    }
-
     // Not needed, since the engine prefers landscape mode by default
-    #[allow(dead_code)]
-    pub fn resize(&self, width: i32, height: i32) {
-        unsafe {
-            self.gl.Viewport(0, 0, width, height);
-        }
-    }
+    //#[allow(dead_code)]
+    //pub fn resize(&self, width: i32, height: i32) {
+    //    unsafe {
+    //        self.gl.Viewport(0, 0, width, height);
+    //    }
+    //}
 }
