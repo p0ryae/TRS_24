@@ -62,4 +62,4 @@ pub fn main() {
     // The rest of your code here...
 }
 ```
-ℹ️ To try and view a fully complete example, clone this repo, and go to the `example` directory.
+ℹ️ To try and view a fully complete example, clone the repository and head to the `example` directory.
