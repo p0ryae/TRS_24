@@ -6,30 +6,35 @@
 use trs_24::overture::*;
 
 pub fn main() {
-    // WARNING: Avoid using this event_loop definition for lib.rs file.
     // Creates an event loop for non-android platforms.
     let event_loop = EventLoopBuilder::new().build();
 
-    // Creates a custom duck model with specified position, scale, and rotation
     let duck = trs_24::renderer::Model::new(
         include_bytes!("../../assets/models/duck/scene.gltf"),
         include_bytes!("../../assets/models/duck/scene.bin"),
         include_bytes!("../../assets/models/duck/texture.png"),
-        Vec3::new(0.5, -0.5, 0.0),
-        Vec3::new(0.006, 0.006, 0.006),
-        -26.0,
-    );
-    // Creates a custom map model with specified position, scale, and rotation
+    )
+    .set_position(Vec3::new(0.5, -0.5, 0.0))
+    .set_scale(Vec3::new(0.006, 0.006, 0.006))
+    .set_rotation(-26.0, trs_24::types::RotAxis::Roll);
+
     let map = trs_24::renderer::Model::new(
         include_bytes!("../../assets/models/map/scene.gltf"),
         include_bytes!("../../assets/models/map/scene.bin"),
         include_bytes!("../../assets/models/map/texture.png"),
-        Vec3::new(-0.5, 0.0, 0.0),
-        Vec3::new(0.08, 0.08, 0.08),
-        0.0,
-    );
+    )
+    .set_position(Vec3::new(-0.5, 0.0, 0.0))
+    .set_scale(Vec3::new(0.08, 0.08, 0.08));
 
-    // Initialize the window, renderer, and draw the models within the models vector.
-    // Second argument sets the specified RGBA color model for the world.
-    App::run(event_loop, RGBA::new(0.4, 0.0, 1.0, 1.0), vec![duck, map]);
+    let x = trs_24::ui::Element::new(trs_24::types::Shape::Triangle)
+        .set_color(RGBA::new(0.5, 0.0, 1.0, 0.5))
+        .set_position(Vec3::new(0.7, 0.6, 0.0))
+        .set_scale(Vec3::new(0.5, 0.3, 0.5));
+
+    App::run(
+        event_loop,
+        RGBA::new(0.1, 0.1, 0.1, 1.0),
+        vec![duck, map],
+        vec![x],
+    );
 }

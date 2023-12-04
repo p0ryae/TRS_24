@@ -10,7 +10,7 @@ pub fn adjust(
     far_plane: f32,
 ) {
     unsafe {
-        let position: nalgebra_glm::Vec3 = nalgebra_glm::vec3(0.0, 0.0, 2.0);
+        let position: nalgebra_glm::Vec3 = nalgebra_glm::vec3(0.0, 0.0, 3.0);
         let orientation: nalgebra_glm::Vec3 = nalgebra_glm::vec3(0.0, 0.0, -1.0);
         let up: nalgebra_glm::Vec3 = nalgebra_glm::vec3(0.0, 1.0, 0.0);
 

@@ -2,6 +2,7 @@ use crate::overture;
 use crate::renderer::gl;
 use crate::renderer::mesh;
 use crate::renderer::texture;
+use crate::types;
 
 use json::JsonValue;
 
@@ -20,7 +21,7 @@ pub struct Model {
     pub texture_file: &'static [u8],
     pub position: overture::Vec3,
     pub scale: overture::Vec3,
-    pub rotation: f32,
+    pub rotation: (f32, types::RotAxis),
 }
 
 impl Model {
@@ -28,24 +29,35 @@ impl Model {
         gltf_file: &'static [u8],
         bin_file: &'static [u8],
         texture_file: &'static [u8],
-        position: overture::Vec3,
-        scale: overture::Vec3,
-        rotation: f32,
     ) -> Model {
         return Model {
             gltf_file,
             bin_file,
             texture_file,
-            position,
-            scale,
-            rotation,
+            position: overture::Vec3::new(0.0, 0.0, 0.0),
+            scale: overture::Vec3::new(0.01, 0.01, 0.01),
+            rotation: (0.0, types::RotAxis::Pitch),
         };
+    }
+
+    pub fn set_position(mut self, position: overture::Vec3) -> Self {
+        self.position = position;
+        self
+    }
+
+    pub fn set_scale(mut self, scale: overture::Vec3) -> Self {
+        self.scale = scale;
+        self
+    }
+
+    pub fn set_rotation(mut self, rotation: f32, axis: types::RotAxis) -> Self {
+        self.rotation = (rotation, axis);
+        self
     }
 }
 
 pub struct ReadyModel {
     gl: gl::Gl,
-    program: gl::types::GLuint,
     json: JsonValue,
     data: Vec<u8>,
     texture_file: &'static [u8],
@@ -58,7 +70,6 @@ pub struct ReadyModel {
 impl ReadyModel {
     pub unsafe fn new(
         gl: gl::Gl,
-        program: gl::types::GLuint,
         gltf_file: &'static [u8],
         bin_file: &[u8],
         texture_file: &'static [u8],
@@ -76,7 +87,6 @@ impl ReadyModel {
 
         let mut instance = Self {
             gl,
-            program,
             json,
             data: bin_file.to_vec(),
             texture_file,
@@ -93,24 +103,21 @@ impl ReadyModel {
         instance
     }
 
-    #[allow(dead_code)]
     pub fn set_position(&mut self, position: nalgebra_glm::Vec3) {
         self.position = position;
     }
 
-    #[allow(dead_code)]
     pub fn set_scale(&mut self, scale: nalgebra_glm::Vec3) {
         self.scale = scale;
     }
 
-    #[allow(dead_code)]
     pub fn set_rotation(&mut self, rotation: nalgebra_glm::Quat) {
         self.rotation = rotation;
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, program: gl::types::GLuint) {
         for mesh in self.meshes.iter() {
-            mesh.draw(self.position, self.scale, self.rotation);
+            mesh.draw(program, self.position, self.scale, self.rotation);
         }
     }
 
@@ -244,15 +251,10 @@ impl ReadyModel {
         let indices = self
             .get_indices(self.json["accessors"][ind_acc_ind].clone())
             .unwrap();
-        let texture = texture::Texture::new(self.gl.clone(), self.program, self.texture_file);
+        let texture = texture::Texture::new(self.gl.clone(), self.texture_file);
 
-        self.meshes.push(mesh::Mesh::new(
-            self.gl.clone(),
-            self.program,
-            vertices,
-            indices,
-            texture,
-        ));
+        self.meshes
+            .push(mesh::Mesh::new(self.gl.clone(), vertices, indices, texture));
     }
 
     unsafe fn traverse_node(

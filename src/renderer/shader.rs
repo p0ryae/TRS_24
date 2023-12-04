@@ -1,12 +1,13 @@
 use crate::renderer::gl;
 
-const VERTEX_SHADER_SOURCE: &[u8] = include_bytes!("./shaders/shader-vert.glsl");
-const FRAGMENT_SHADER_SOURCE: &[u8] = include_bytes!("./shaders/shader-frag.glsl");
-
-pub fn create_init_shader(gl: gl::Gl) -> gl::types::GLuint {
+pub fn create_init_shader(
+    gl: gl::Gl,
+    vertex_shader_source: &[u8],
+    fragment_shader_source: &[u8],
+) -> gl::types::GLuint {
     unsafe {
-        let vertex_shader = create_shader(&gl, gl::VERTEX_SHADER, VERTEX_SHADER_SOURCE);
-        let fragment_shader = create_shader(&gl, gl::FRAGMENT_SHADER, FRAGMENT_SHADER_SOURCE);
+        let vertex_shader = create_shader(&gl, gl::VERTEX_SHADER, vertex_shader_source);
+        let fragment_shader = create_shader(&gl, gl::FRAGMENT_SHADER, fragment_shader_source);
 
         let program = gl.CreateProgram();
 
@@ -18,7 +19,7 @@ pub fn create_init_shader(gl: gl::Gl) -> gl::types::GLuint {
         gl.DeleteShader(vertex_shader);
         gl.DeleteShader(fragment_shader);
 
-        return program;
+        program
     }
 }
 

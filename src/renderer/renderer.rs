@@ -3,18 +3,26 @@ use crate::renderer::camera;
 use crate::renderer::gl;
 use crate::renderer::model;
 use crate::renderer::shader;
+use crate::types;
+use crate::ui;
 
 use glutin::display::Display;
 use glutin::prelude::*;
 
 pub struct Renderer {
     program: gl::types::GLuint,
+    program_ui: gl::types::GLuint,
     gl: gl::Gl,
     models: Vec<model::ReadyModel>,
+    ui: Vec<ui::ReadyElement>,
 }
 
 impl Renderer {
-    pub fn new(gl_display: &Display, not_ready_models: &Vec<model::Model>) -> Self {
+    pub fn new(
+        gl_display: &Display,
+        not_ready_models: &Vec<model::Model>,
+        not_ready_ui: &Vec<ui::Element>,
+    ) -> Self {
         unsafe {
             let gl = gl::Gl::load_with(|symbol| {
                 let symbol = std::ffi::CString::new(symbol).unwrap();
@@ -40,16 +48,26 @@ impl Renderer {
                 println!("Shaders version on {}", shaders_version.to_string_lossy());
             }
 
-            let program = shader::create_init_shader(gl.clone());
+            let program = shader::create_init_shader(
+                gl.clone(),
+                include_bytes!("./shaders/shader-vert.glsl"),
+                include_bytes!("./shaders/shader-frag.glsl"),
+            );
+            let program_ui = shader::create_init_shader(
+                gl.clone(),
+                include_bytes!("../ui/shaders/shader-vert.glsl"),
+                include_bytes!("../ui/shaders/shader-frag.glsl"),
+            );
 
             gl.Enable(gl::DEPTH_TEST);
+            gl.Enable(gl::BLEND);
+            gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
             let mut models = Vec::new();
 
             for model in not_ready_models {
                 let mut x = model::ReadyModel::new(
                     gl.clone(),
-                    program,
                     model.gltf_file,
                     model.bin_file,
                     model.texture_file,
@@ -64,18 +82,54 @@ impl Renderer {
                     model.scale.y,
                     model.scale.z,
                 ));
-                x.set_rotation(nalgebra_glm::quat_angle_axis(
-                    model.rotation,
-                    &nalgebra_glm::vec3(0.0, 1.0, 0.0),
-                ));
+                match model.rotation.1 {
+                    types::RotAxis::Pitch => {
+                        x.set_rotation(nalgebra_glm::quat_angle_axis(
+                            model.rotation.0,
+                            &nalgebra_glm::vec3(1.0, 0.0, 0.0),
+                        ));
+                    }
+                    types::RotAxis::Roll => {
+                        x.set_rotation(nalgebra_glm::quat_angle_axis(
+                            model.rotation.0,
+                            &nalgebra_glm::vec3(0.0, 1.0, 0.0),
+                        ));
+                    }
+                    types::RotAxis::Yaw => {
+                        x.set_rotation(nalgebra_glm::quat_angle_axis(
+                            model.rotation.0,
+                            &nalgebra_glm::vec3(0.0, 0.0, 1.0),
+                        ));
+                    }
+                }
 
                 models.push(x);
             }
 
+            let mut ui = Vec::new();
+
+            for element in not_ready_ui {
+                let x = ui::ReadyElement::new(
+                    gl.clone(),
+                    &element.shape,
+                    &element.color,
+                    nalgebra_glm::vec3(element.position.x, element.position.y, element.position.z),
+                    nalgebra_glm::vec3(element.scale.x, element.scale.y, element.scale.z),
+                    nalgebra_glm::quat_angle_axis(
+                        element.rotation,
+                        &nalgebra_glm::vec3(0.0, 0.0, 1.0),
+                    ),
+                );
+
+                ui.push(x);
+            }
+
             Self {
                 program,
+                program_ui,
                 gl,
                 models,
+                ui,
             }
         }
     }
@@ -97,16 +151,30 @@ impl Renderer {
             );
 
             for model in &self.models {
-                model.draw();
+                model.draw(self.program);
+            }
+
+            self.gl.Clear(gl::DEPTH_BUFFER_BIT);
+
+            camera::adjust(
+                self.gl.clone(),
+                self.program_ui,
+                width as f32,
+                height as f32,
+                45.0,
+                0.1,
+                100.0,
+            );
+
+            for element in &self.ui {
+                element.draw(self.program_ui);
             }
         }
     }
 
-    // Not needed, since the engine prefers landscape mode by default
-    //#[allow(dead_code)]
-    //pub fn resize(&self, width: i32, height: i32) {
-    //    unsafe {
-    //        self.gl.Viewport(0, 0, width, height);
-    //    }
-    //}
+    pub fn resize(&self, width: i32, height: i32) {
+        unsafe {
+            self.gl.Viewport(0, 0, width, height);
+        }
+    }
 }

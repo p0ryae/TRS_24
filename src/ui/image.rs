@@ -2,17 +2,17 @@ use crate::renderer::gl;
 use std::io::{Cursor, Read};
 
 #[allow(dead_code)]
-pub struct Texture {
+pub struct Image {
     gl: gl::Gl,
-    texture: gl::types::GLuint,
+    image: gl::types::GLuint,
 }
 
 #[allow(dead_code)]
-impl Texture {
+impl Image {
     pub fn new(
         gl: gl::Gl,
         img: &[u8],
-    ) -> Texture {
+    ) -> Image {
         unsafe {
             let mut cursor = Cursor::new(img);
             let mut contents = vec![];
@@ -31,11 +31,11 @@ impl Texture {
                 stb_image_rust::STBI_rgb_alpha,
             );
 
-            let mut texture: gl::types::GLuint = std::mem::zeroed();
-            gl.GenTextures(1, &mut texture);
+            let mut image: gl::types::GLuint = std::mem::zeroed();
+            gl.GenTextures(1, &mut image);
 
             gl.ActiveTexture(gl::TEXTURE0);
-            gl.BindTexture(gl::TEXTURE_2D, texture);
+            gl.BindTexture(gl::TEXTURE_2D, image);
 
             gl.TexParameteri(
                 gl::TEXTURE_2D,
@@ -103,14 +103,14 @@ impl Texture {
 
             Self {
                 gl,
-                texture
+                image
             }
         }
     }
     pub fn bind(&self) {
         unsafe {
             self.gl.ActiveTexture(gl::TEXTURE0);
-            self.gl.BindTexture(gl::TEXTURE_2D, self.texture)
+            self.gl.BindTexture(gl::TEXTURE_2D, self.image)
         }
     }
 }

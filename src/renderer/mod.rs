@@ -8,7 +8,7 @@ mod texture;
 pub use model::Model;
 pub use renderer::Renderer;
 
-mod gl {
+pub mod gl {
     #![allow(clippy::all)]
     include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
 

@@ -1,13 +1,16 @@
 #![allow(dead_code)]
 
 pub mod renderer;
+pub mod ui;
+pub mod types;
 
 #[cfg(target_os = "android")]
 pub use android_logger;
 
 pub mod overture {
-    use crate::renderer::Renderer;
     use crate::renderer::Model;
+    use crate::renderer::Renderer;
+    use crate::ui;
     use glutin::config::{Config, ConfigSurfaceTypes, ConfigTemplate, ConfigTemplateBuilder};
     use glutin::context::{ContextApi, ContextAttributesBuilder, NotCurrentContext};
     use glutin::display::{Display, DisplayApiPreference};
@@ -95,7 +98,12 @@ pub mod overture {
         }
 
         fn ensure_surface_and_context<T>(&mut self, event_loop: &EventLoopWindowTarget<T>) {
-            let window = winit::window::Window::new(&event_loop).unwrap();
+            let window = winit::window::WindowBuilder::new()
+                .with_inner_size(winit::dpi::LogicalSize::new(960.0, 640.0))
+                .with_min_inner_size(winit::dpi::LogicalSize::new(480.0, 320.0))
+                .with_title("TRS_24 Window")
+                .build(&event_loop)
+                .unwrap();
             let raw_window_handle = window.raw_window_handle();
 
             self.ensure_glutin_display(&window);
@@ -163,13 +171,13 @@ pub mod overture {
             self.surface_state = Some(surface_state);
         }
 
-        fn ensure_renderer(&mut self, models: &Vec<Model>) {
+        fn ensure_renderer(&mut self, models: &Vec<Model>, ui: &Vec<ui::Element>) {
             let glutin_display = self
                 .glutin_display
                 .as_ref()
                 .expect("Can't ensure renderer without a Glutin Display connection");
             self.render_state
-                .get_or_insert_with(|| Renderer::new(glutin_display, models));
+                .get_or_insert_with(|| Renderer::new(glutin_display, models, ui));
         }
 
         fn queue_redraw(&self) {
@@ -183,10 +191,11 @@ pub mod overture {
             &mut self,
             event_loop: &EventLoopWindowTarget<T>,
             models: &Vec<Model>,
+            ui: &Vec<ui::Element>,
         ) {
             log::trace!("Resumed, creating render state...");
             self.ensure_surface_and_context(event_loop);
-            self.ensure_renderer(models);
+            self.ensure_renderer(models, ui);
             self.queue_redraw();
         }
 
@@ -194,6 +203,7 @@ pub mod overture {
             event_loop: EventLoop<()>,
             world_color: RGBA,
             models: Vec<Model>,
+            ui: Vec<ui::Element>,
         ) {
             log::trace!("Running mainloop...");
 
@@ -213,7 +223,7 @@ pub mod overture {
                 *control_flow = ControlFlow::Wait;
                 match event {
                     Event::Resumed => {
-                        app.resume(event_loop, &models);
+                        app.resume(event_loop, &models, &ui);
                     }
                     Event::Suspended => {
                         log::trace!("Suspended, dropping surface state...");
