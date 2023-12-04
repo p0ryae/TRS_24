@@ -26,7 +26,7 @@ pub fn main() {
     .set_position(Vec3::new(-0.5, 0.0, 0.0))
     .set_scale(Vec3::new(0.08, 0.08, 0.08));
 
-    let x = trs_24::ui::Element::new(trs_24::types::Shape::Triangle)
+    let hat_ui = trs_24::ui::Element::new(trs_24::types::Shape::Triangle)
         .set_color(RGBA::new(0.5, 0.0, 1.0, 0.5))
         .set_position(Vec3::new(0.7, 0.6, 0.0))
         .set_scale(Vec3::new(0.5, 0.3, 0.5));
@@ -35,6 +35,6 @@ pub fn main() {
         event_loop,
         RGBA::new(0.1, 0.1, 0.1, 1.0),
         vec![duck, map],
-        vec![x],
+        vec![hat_ui],
     );
 }
