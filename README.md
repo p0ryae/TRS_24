@@ -14,7 +14,7 @@ The engine supports OpenGL ES 2.0 graphics API, allowing compatibility with a br
 Moreover, The process for bundling `.apk` for Android shipment has been significantly untangled.
 
 ## Getting Started
-Fundamentally, using two files is the ideal approach for using the engine. Primary file `lib.rs` soley used for running the window on Android and building a shared object (*.so).
+Fundamentally, using two files is the ideal approach for using the engine. Primary file `lib.rs` solely used for running the window on Android and building a shared object (*.so).
 Secondary file `main.rs` solely used for testing purposes on the host machine. Both of these files need to be in the `src` directory.
 
 For both of these files to co-exist, the following needs to be in `Cargo.toml`:
