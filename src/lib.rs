@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
 pub mod renderer;
-pub mod ui;
 pub mod types;
+pub mod ui;
 
 #[cfg(target_os = "android")]
 pub use android_logger;
@@ -52,7 +52,20 @@ pub mod overture {
             raw_display: RawDisplayHandle,
             raw_window_handle: RawWindowHandle,
         ) -> Display {
-            unsafe { Display::new(raw_display, DisplayApiPreference::Egl).unwrap() }
+
+            #[cfg(target_os = "linux")]
+            let preference = DisplayApiPreference::Egl;
+
+            #[cfg(target_os = "android")]
+            let preference = DisplayApiPreference::Egl;
+
+            #[cfg(target_os = "macos")]
+            let preference = DisplayApiPreference::Cgl;
+
+            #[cfg(target_os = "windows")]
+            let preference = DisplayApiPreference::Wgl(Some(raw_window_handle));
+
+            unsafe { Display::new(raw_display, preference).unwrap() }
         }
 
         fn ensure_glutin_display(&mut self, window: &winit::window::Window) {
