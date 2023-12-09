@@ -198,7 +198,6 @@ pub mod overture {
 
         fn queue_redraw(&self) {
             if let Some(surface_state) = &self.surface_state {
-                log::trace!("Making Redraw Request");
                 surface_state.window.request_redraw();
             }
         }
@@ -209,7 +208,6 @@ pub mod overture {
             models: &Vec<Model>,
             ui: &Vec<ui::Element>,
         ) {
-            log::trace!("Resumed, creating render state...");
             self.ensure_surface_and_context(event_loop);
             self.ensure_renderer(models, ui);
             self.queue_redraw();
@@ -221,8 +219,6 @@ pub mod overture {
             models: Vec<Model>,
             ui: Vec<ui::Element>,
         ) {
-            log::trace!("Running mainloop...");
-
             #[cfg(not(target_os = "android"))]
             if std::env::var("MESA_GLES_VERSION_OVERRIDE").is_err() {
                 // Fallback to GLES version 2.0 for test runs (mesa drivers particularly)
@@ -241,8 +237,6 @@ pub mod overture {
             let mut left_mouse_button_pressed = false;
 
             event_loop.run(move |event, event_loop, control_flow| {
-                log::trace!("Received Winit event: {event:?}");
-
                 if let Some(ref surface_state) = app.surface_state {
                     let (width, height): (u32, u32) = surface_state.window.inner_size().into();
                     if allowed_to_set_camera {
@@ -257,19 +251,16 @@ pub mod overture {
                         app.resume(event_loop, &models, &ui);
                     }
                     Event::Suspended => {
-                        log::trace!("Suspended, dropping surface state...");
                         app.surface_state = None;
                     }
                     Event::RedrawRequested(_) => {
-                        log::trace!("Handling Redraw Request");
-
                         if let Some(ref surface_state) = app.surface_state {
                             if let Some(ctx) = &app.context {
                                 if let Some(ref mut renderer) = app.render_state {
                                     renderer.draw(&world_color, &camera);
 
                                     if let Err(err) = surface_state.surface.swap_buffers(ctx) {
-                                        log::error!("Failed to swap buffers after render: {}", err);
+                                        println!("Failed to swap buffers after render: {}", err);
                                     }
                                 }
                                 app.queue_redraw();
