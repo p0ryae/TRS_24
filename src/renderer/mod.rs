@@ -7,6 +7,7 @@ mod texture;
 
 pub use model::Model;
 pub use renderer::Renderer;
+pub use camera::Camera;
 
 pub mod gl {
     #![allow(clippy::all)]

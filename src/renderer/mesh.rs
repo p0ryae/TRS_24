@@ -146,6 +146,8 @@ impl Mesh {
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
+
+            self.texture.unbind();
         }
     }
 }

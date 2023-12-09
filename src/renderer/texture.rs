@@ -113,4 +113,9 @@ impl Texture {
             self.gl.BindTexture(gl::TEXTURE_2D, self.texture)
         }
     }
+    pub fn unbind(&self) {
+        unsafe {
+            self.gl.BindTexture(gl::TEXTURE_2D, 0)
+        }
+    }
 }

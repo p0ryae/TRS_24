@@ -1,8 +1,8 @@
 use crate::overture;
-use crate::renderer::camera;
 use crate::renderer::gl;
 use crate::renderer::model;
 use crate::renderer::shader;
+use crate::renderer::Camera;
 use crate::types;
 use crate::ui;
 
@@ -14,7 +14,7 @@ pub struct Renderer {
     program_ui: gl::types::GLuint,
     gl: gl::Gl,
     models: Vec<model::ReadyModel>,
-    ui: Vec<ui::ReadyElement>,
+    ui: Vec<types::ElementType>,
 }
 
 impl Renderer {
@@ -106,22 +106,47 @@ impl Renderer {
                 models.push(x);
             }
 
-            let mut ui = Vec::new();
+            let mut ui: Vec<types::ElementType> = Vec::new();
 
             for element in not_ready_ui {
-                let x = ui::ReadyElement::new(
-                    gl.clone(),
-                    &element.shape,
-                    &element.color,
-                    nalgebra_glm::vec3(element.position.x, element.position.y, element.position.z),
-                    nalgebra_glm::vec3(element.scale.x, element.scale.y, element.scale.z),
-                    nalgebra_glm::quat_angle_axis(
-                        element.rotation,
-                        &nalgebra_glm::vec3(0.0, 0.0, 1.0),
-                    ),
-                );
-
-                ui.push(x);
+                match &element.el_type {
+                    types::ElementType::Shape(shape_builder) => {
+                        let x = types::ElementType::Shape(ui::ShapeBuilder::new_instance(
+                            gl.clone(),
+                            shape_builder,
+                            &element.color,
+                            nalgebra_glm::vec3(
+                                element.position.x,
+                                element.position.y,
+                                element.position.z,
+                            ),
+                            nalgebra_glm::vec3(element.scale.x, element.scale.y, element.scale.z),
+                            nalgebra_glm::quat_angle_axis(
+                                element.rotation,
+                                &nalgebra_glm::vec3(0.0, 0.0, 1.0),
+                            ),
+                        ));
+                        ui.push(x);
+                    }
+                    types::ElementType::Text(text_builder) => {
+                        let x = types::ElementType::Text(ui::TextBuilder::new_instance(
+                            gl.clone(),
+                            text_builder,
+                            element.color.clone(),
+                            nalgebra_glm::vec3(
+                                element.position.x,
+                                element.position.y,
+                                element.position.z,
+                            ),
+                            nalgebra_glm::vec3(element.scale.x, element.scale.y, element.scale.z),
+                            nalgebra_glm::quat_angle_axis(
+                                element.rotation,
+                                &nalgebra_glm::vec3(0.0, 0.0, 1.0),
+                            ),
+                        ));
+                        ui.push(x);
+                    }
+                }
             }
 
             Self {
@@ -134,21 +159,13 @@ impl Renderer {
         }
     }
 
-    pub fn draw(&mut self, width: i32, height: i32, world_color: &overture::RGBA) {
+    pub fn draw(&mut self, world_color: &overture::RGBA, camera: &Camera) {
         unsafe {
             self.gl
                 .ClearColor(world_color.r, world_color.g, world_color.b, world_color.a);
             self.gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-            camera::adjust(
-                self.gl.clone(),
-                self.program,
-                width as f32,
-                height as f32,
-                45.0,
-                0.1,
-                100.0,
-            );
+            camera.adjust(self.gl.clone(), self.program, 45.0, 0.1, 100.0);
 
             for model in &self.models {
                 model.draw(self.program);
@@ -156,18 +173,17 @@ impl Renderer {
 
             self.gl.Clear(gl::DEPTH_BUFFER_BIT);
 
-            camera::adjust(
-                self.gl.clone(),
-                self.program_ui,
-                width as f32,
-                height as f32,
-                45.0,
-                0.1,
-                100.0,
-            );
+            camera.adjust(self.gl.clone(), self.program_ui, 45.0, 0.1, 100.0);
 
             for element in &self.ui {
-                element.draw(self.program_ui);
+                match element {
+                    types::ElementType::Shape(shape_instance) => {
+                        shape_instance.draw(self.program_ui);
+                    }
+                    types::ElementType::Text(text_instance) => {
+                        text_instance.draw(self.program_ui);
+                    }
+                }
             }
         }
     }

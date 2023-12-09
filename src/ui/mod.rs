@@ -1,6 +1,7 @@
 mod ui;
 mod text;
+mod shape;
 
 pub use ui::Element;
-pub use ui::ReadyElement;
-pub use text::TextBox;
+pub use text::TextBuilder;
+pub use shape::ShapeBuilder;

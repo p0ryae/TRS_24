@@ -1,3 +1,4 @@
 [target.arm-linux-androideabi]
 ar="/home/porya/Android/Sdk/ndk/android-ndk-r16b/build/tools/arm/bin/arm-linux-androideabi-ar"
 linker="/home/porya/Android/Sdk/ndk/android-ndk-r16b/build/tools/arm/bin/arm-linux-androideabi-clang"
+rustflags=["-L", "/home/porya/Android/Sdk/ndk/android-ndk-r16b/platforms/android-19/arch-arm/usr/lib/"]
