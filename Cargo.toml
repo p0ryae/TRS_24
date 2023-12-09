@@ -3,6 +3,7 @@ name = "trs_24"
 version = "0.1.4"
 edition = "2021"
 keywords = ["gamedev", "graphics", "android", "trs_24", "engine"]
+categories = ["game-engines", "game-development", "graphics", "rendering"]
 license = "MIT OR Apache-2.0"
 description = "An OpenGL-Powered Android Game Engine"
 repository = "https://github.com/p0ryae/TRS_24"
