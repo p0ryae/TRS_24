@@ -1,6 +1,6 @@
 [package]
 name = "trs_24"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 keywords = ["gamedev", "graphics", "android", "trs_24", "engine"]
 license = "MIT OR Apache-2.0"
