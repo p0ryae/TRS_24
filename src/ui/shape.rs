@@ -5,6 +5,7 @@ use crate::overture::*;
 #[derive(Clone)]
 pub struct ShapeBuilder {
     pub shape: Shape,
+    pub is_hud: bool,
     gl: gl::Gl,
     indices: Vec<i32>,
     position: nalgebra_glm::Vec3,
@@ -20,6 +21,7 @@ impl ShapeBuilder {
         unsafe {
             Self { 
                 shape,
+                is_hud: false,
                 gl: std::mem::zeroed(),
                 indices: Vec::new(),
                 position: nalgebra_glm::vec3(0.0, 0.0, 0.0),
@@ -38,6 +40,7 @@ impl ShapeBuilder {
     pub fn new_instance(
         gl: gl::Gl,
         shape_builder: &ShapeBuilder,
+        is_hud: bool, 
         rgba: &RGBA,
         position: nalgebra_glm::Vec3,
         scale: nalgebra_glm::Vec3,
@@ -124,6 +127,7 @@ impl ShapeBuilder {
 
             Self {
                 shape: shape_builder.clone().shape,
+                is_hud,
                 gl,
                 indices,
                 position,

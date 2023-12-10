@@ -1,4 +1,5 @@
 use crate::overture;
+use crate::renderer::camera::ProjectionType;
 use crate::renderer::gl;
 use crate::renderer::model;
 use crate::renderer::shader;
@@ -59,7 +60,6 @@ impl Renderer {
                 include_bytes!("../ui/shaders/shader-frag.glsl"),
             );
 
-            gl.Enable(gl::DEPTH_TEST);
             gl.Enable(gl::BLEND);
             gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
@@ -114,6 +114,7 @@ impl Renderer {
                         let x = types::ElementType::Shape(ui::ShapeBuilder::new_instance(
                             gl.clone(),
                             shape_builder,
+                            element.is_hud,
                             &element.color,
                             nalgebra_glm::vec3(
                                 element.position.x,
@@ -132,6 +133,7 @@ impl Renderer {
                         let x = types::ElementType::Text(ui::TextBuilder::new_instance(
                             gl.clone(),
                             text_builder,
+                            element.is_hud,
                             element.color.clone(),
                             nalgebra_glm::vec3(
                                 element.position.x,
@@ -165,22 +167,53 @@ impl Renderer {
                 .ClearColor(world_color.r, world_color.g, world_color.b, world_color.a);
             self.gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-            camera.adjust(self.gl.clone(), self.program, 45.0, 0.1, 100.0);
-
+            camera.adjust(
+                self.gl.clone(),
+                self.program,
+                ProjectionType::Perspective,
+                45.0,
+                0.1,
+                100.0,
+            );
+            self.gl.Enable(gl::DEPTH_TEST);
             for model in &self.models {
                 model.draw(self.program);
             }
 
             self.gl.Clear(gl::DEPTH_BUFFER_BIT);
 
-            camera.adjust(self.gl.clone(), self.program_ui, 45.0, 0.1, 100.0);
-
+            self.gl.Disable(gl::DEPTH_TEST);
             for element in &self.ui {
                 match element {
                     types::ElementType::Shape(shape_instance) => {
+                        camera.adjust(
+                            self.gl.clone(),
+                            self.program_ui,
+                            if shape_instance.is_hud {
+                                ProjectionType::Orthographic
+                            } else {
+                                ProjectionType::Perspective
+                            },
+                            45.0,
+                            0.1,
+                            100.0,
+                        );
                         shape_instance.draw(self.program_ui);
                     }
                     types::ElementType::Text(text_instance) => {
+                        camera.adjust(
+                            self.gl.clone(),
+                            self.program_ui,
+                            if text_instance.is_hud {
+                                ProjectionType::Orthographic
+                            } else {
+                                ProjectionType::Perspective
+                            },
+                            45.0,
+                            0.1,
+                            100.0,
+                        );
+                        
                         text_instance.draw(self.program_ui);
                     }
                 }

@@ -3,6 +3,7 @@ use crate::types::*;
 
 pub struct Element {
     pub el_type: ElementType,
+    pub is_hud: bool,
     pub color: RGBA,
     pub position: Vec3,
     pub scale: Vec3,
@@ -15,6 +16,7 @@ impl Element {
     ) -> Self {
         Self {
             el_type,
+            is_hud: false,
             color: RGBA::new(0.1, 0.1, 0.1, 1.0),
             position: Vec3::new(0.0, 0.0, 0.0),
             scale: Vec3::new(1.0, 1.0, 1.0),
@@ -44,6 +46,11 @@ impl Element {
 
     pub fn set_color(mut self, rgba: RGBA) -> Self {
         self.color = rgba;
+        self
+    }
+
+    pub fn is_hud(mut self, is_hud: bool) -> Self {
+        self.is_hud = is_hud;
         self
     }
 }
