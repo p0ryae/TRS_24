@@ -1,5 +1,5 @@
-use crate::overture::*;
 use crate::renderer::gl;
+use crate::types;
 use std::collections::HashMap;
 
 #[derive(Clone)]
@@ -12,7 +12,7 @@ pub struct TextBuilder {
     position: nalgebra_glm::Vec3,
     scale: nalgebra_glm::Vec3,
     rotation: nalgebra_glm::Quat,
-    rgba: RGBA,
+    rgba: types::RGBA,
     characters: HashMap<char, Character>,
     vbo: gl::types::GLuint,
 }
@@ -37,7 +37,7 @@ impl TextBuilder {
                 position: nalgebra_glm::vec3(0.0, 0.0, 0.0),
                 scale: nalgebra_glm::vec3(1.0, 1.0, 1.0),
                 rotation: nalgebra_glm::quat_angle_axis(0.0, &nalgebra_glm::vec3(0.0, 0.0, 0.0)),
-                rgba: RGBA::new(0.1, 0.1, 0.1, 1.0),
+                rgba: types::RGBA::new(0.1, 0.1, 0.1, 1.0),
                 characters: HashMap::new(),
                 vbo: std::mem::zeroed(),
             }
@@ -48,7 +48,7 @@ impl TextBuilder {
         gl: gl::Gl,
         text_builder: &TextBuilder,
         is_hud: bool, 
-        rgba: RGBA,
+        rgba: types::RGBA,
         position: nalgebra_glm::Vec3,
         scale: nalgebra_glm::Vec3,
         rotation: nalgebra_glm::Quat,

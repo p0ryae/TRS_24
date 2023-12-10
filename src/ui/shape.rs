@@ -1,10 +1,9 @@
 use crate::renderer::gl;
-use crate::types::*;
-use crate::overture::*;
+use crate::types;
 
 #[derive(Clone)]
 pub struct ShapeBuilder {
-    pub shape: Shape,
+    pub shape: types::Shape,
     pub is_hud: bool,
     gl: gl::Gl,
     indices: Vec<i32>,
@@ -17,7 +16,7 @@ pub struct ShapeBuilder {
 }
 
 impl ShapeBuilder {
-    pub fn new(shape: Shape) -> Self {
+    pub fn new(shape: types::Shape) -> Self {
         unsafe {
             Self { 
                 shape,
@@ -41,7 +40,7 @@ impl ShapeBuilder {
         gl: gl::Gl,
         shape_builder: &ShapeBuilder,
         is_hud: bool, 
-        rgba: &RGBA,
+        rgba: &types::RGBA,
         position: nalgebra_glm::Vec3,
         scale: nalgebra_glm::Vec3,
         rotation: nalgebra_glm::Quat,
@@ -52,7 +51,7 @@ impl ShapeBuilder {
 
             match shape_builder.shape {
                 #[rustfmt::skip]
-                Shape::Square => {
+                types::Shape::Square => {
                     vertices = [
                         -0.5, -0.5,  rgba.r, rgba.g, rgba.b, rgba.a,   0.0, 0.0, 
                         -0.5,  0.5,  rgba.r, rgba.g, rgba.b, rgba.a,   0.0, 1.0, 
@@ -68,7 +67,7 @@ impl ShapeBuilder {
                     .to_vec();
                 }
                 #[rustfmt::skip]
-                Shape::Triangle => {
+                types::Shape::Triangle => {
                     vertices = [
                          0.0,  0.5,  rgba.r, rgba.g, rgba.b, rgba.a,   0.5, 1.0,
                         -0.5, -0.5,  rgba.r, rgba.g, rgba.b, rgba.a,   0.0, 0.0, 

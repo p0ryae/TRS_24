@@ -1,4 +1,3 @@
-use crate::overture;
 use crate::renderer::camera::ProjectionType;
 use crate::renderer::gl;
 use crate::renderer::model;
@@ -11,8 +10,8 @@ use glutin::display::Display;
 use glutin::prelude::*;
 
 pub struct Renderer {
-    program: gl::types::GLuint,
-    program_ui: gl::types::GLuint,
+    program_3d: gl::types::GLuint,
+    program_2d: gl::types::GLuint,
     gl: gl::Gl,
     models: Vec<model::ReadyModel>,
     ui: Vec<types::ElementType>,
@@ -49,12 +48,12 @@ impl Renderer {
                 println!("Shaders version on {}", shaders_version.to_string_lossy());
             }
 
-            let program = shader::create_init_shader(
+            let program_3d = shader::create_init_shader(
                 gl.clone(),
                 include_bytes!("./shaders/shader-vert.glsl"),
                 include_bytes!("./shaders/shader-frag.glsl"),
             );
-            let program_ui = shader::create_init_shader(
+            let program_2d = shader::create_init_shader(
                 gl.clone(),
                 include_bytes!("../ui/shaders/shader-vert.glsl"),
                 include_bytes!("../ui/shaders/shader-frag.glsl"),
@@ -152,8 +151,8 @@ impl Renderer {
             }
 
             Self {
-                program,
-                program_ui,
+                program_3d,
+                program_2d,
                 gl,
                 models,
                 ui,
@@ -161,7 +160,7 @@ impl Renderer {
         }
     }
 
-    pub fn draw(&mut self, world_color: &overture::RGBA, camera: &Camera) {
+    pub fn draw(&mut self, world_color: &types::RGBA, camera: &Camera) {
         unsafe {
             self.gl
                 .ClearColor(world_color.r, world_color.g, world_color.b, world_color.a);
@@ -169,7 +168,7 @@ impl Renderer {
 
             camera.adjust(
                 self.gl.clone(),
-                self.program,
+                self.program_3d,
                 ProjectionType::Perspective,
                 45.0,
                 0.1,
@@ -177,7 +176,7 @@ impl Renderer {
             );
             self.gl.Enable(gl::DEPTH_TEST);
             for model in &self.models {
-                model.draw(self.program);
+                model.draw(self.program_3d);
             }
 
             self.gl.Clear(gl::DEPTH_BUFFER_BIT);
@@ -188,7 +187,7 @@ impl Renderer {
                     types::ElementType::Shape(shape_instance) => {
                         camera.adjust(
                             self.gl.clone(),
-                            self.program_ui,
+                            self.program_2d,
                             if shape_instance.is_hud {
                                 ProjectionType::Orthographic
                             } else {
@@ -198,12 +197,12 @@ impl Renderer {
                             0.1,
                             100.0,
                         );
-                        shape_instance.draw(self.program_ui);
+                        shape_instance.draw(self.program_2d);
                     }
                     types::ElementType::Text(text_instance) => {
                         camera.adjust(
                             self.gl.clone(),
-                            self.program_ui,
+                            self.program_2d,
                             if text_instance.is_hud {
                                 ProjectionType::Orthographic
                             } else {
@@ -213,8 +212,8 @@ impl Renderer {
                             0.1,
                             100.0,
                         );
-                        
-                        text_instance.draw(self.program_ui);
+
+                        text_instance.draw(self.program_2d);
                     }
                 }
             }

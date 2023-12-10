@@ -1,6 +1,6 @@
 #![cfg(target_os = "android")]
 
-use trs_24::{android_logger, overture::*};
+use trs_24::{android_logger, overture::*, types::*};
 
 #[no_mangle]
 pub fn android_main(app: AndroidApp) {
@@ -44,8 +44,7 @@ pub fn android_main(app: AndroidApp) {
     .set_scale(Vec3::new(0.002, 0.002, 0.002))
     .set_position(Vec3::new(-0.3, -0.8, 0.0));
 
-    App::run(
-        event_loop,
+    Scene::new(event_loop).run(
         RGBA::new(0.1, 0.1, 0.1, 1.0),
         vec![duck, map],
         vec![textbox, text],

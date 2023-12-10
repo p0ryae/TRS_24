@@ -11,6 +11,7 @@ pub mod overture {
     use crate::renderer::Camera;
     use crate::renderer::Model;
     use crate::renderer::Renderer;
+    use crate::types;
     use crate::ui;
     use glutin::config::{Config, ConfigSurfaceTypes, ConfigTemplate, ConfigTemplateBuilder};
     use glutin::context::{ContextApi, ContextAttributesBuilder, NotCurrentContext};
@@ -26,24 +27,33 @@ pub mod overture {
 
     #[cfg(not(target_os = "android"))]
     use winit::event::{ElementState, MouseButton, VirtualKeyCode};
-    
+
     struct SurfaceState {
         window: winit::window::Window,
         surface: glutin::surface::Surface<glutin::surface::WindowSurface>,
     }
 
-    pub struct App {
-        winsys_display: RawDisplayHandle,
+    pub struct Scene {
+        event_loop: Option<EventLoop<()>>,
+        winsys_display: Option<RawDisplayHandle>,
         glutin_display: Option<Display>,
         surface_state: Option<SurfaceState>,
         context: Option<glutin::context::PossiblyCurrentContext>,
         render_state: Option<Renderer>,
     }
 
-    impl App {
-        fn new(winsys_display: RawDisplayHandle) -> Self {
+    impl Scene {
+        pub fn new(event_loop: EventLoop<()>) -> Self {
+            #[cfg(not(target_os = "android"))]
+            if std::env::var("MESA_GLES_VERSION_OVERRIDE").is_err() {
+                // Fallback to GLES version 2.0 for test runs (mesa drivers particularly)
+                std::env::set_var("MESA_GLES_VERSION_OVERRIDE", "2.0");
+            }
+
+            let winsys_display = event_loop.raw_display_handle();
             Self {
-                winsys_display,
+                event_loop: Some(event_loop),
+                winsys_display: Some(winsys_display),
                 glutin_display: None,
                 surface_state: None,
                 context: None,
@@ -74,8 +84,10 @@ pub mod overture {
         fn ensure_glutin_display(&mut self, window: &winit::window::Window) {
             if self.glutin_display.is_none() {
                 let raw_window_handle = window.raw_window_handle();
-                self.glutin_display =
-                    Some(Self::create_display(self.winsys_display, raw_window_handle));
+                self.glutin_display = Some(Self::create_display(
+                    self.winsys_display.unwrap(),
+                    raw_window_handle,
+                ));
             }
         }
 
@@ -213,21 +225,7 @@ pub mod overture {
             self.queue_redraw();
         }
 
-        pub fn run(
-            event_loop: EventLoop<()>,
-            world_color: RGBA,
-            models: Vec<Model>,
-            ui: Vec<ui::Element>,
-        ) {
-            #[cfg(not(target_os = "android"))]
-            if std::env::var("MESA_GLES_VERSION_OVERRIDE").is_err() {
-                // Fallback to GLES version 2.0 for test runs (mesa drivers particularly)
-                std::env::set_var("MESA_GLES_VERSION_OVERRIDE", "2.0");
-            }
-
-            let raw_display = event_loop.raw_display_handle();
-            let mut app = App::new(raw_display);
-
+        pub fn run(mut self, world_color: types::RGBA, models: Vec<Model>, ui: Vec<ui::Element>) {
             let mut active_touch_events: Vec<winit::event::Touch> = Vec::new();
 
             let mut camera: Camera = Camera::new(0.0, 0.0);
@@ -236,103 +234,197 @@ pub mod overture {
             #[cfg(not(target_os = "android"))]
             let mut left_mouse_button_pressed = false;
 
-            event_loop.run(move |event, event_loop, control_flow| {
-                if let Some(ref surface_state) = app.surface_state {
-                    let (width, height): (u32, u32) = surface_state.window.inner_size().into();
-                    if allowed_to_set_camera {
-                        camera = Camera::new(width as f32, height as f32);
-                        allowed_to_set_camera = false;
-                    }
-                }
+            let mut previous_frame_time = std::time::Instant::now();
 
-                *control_flow = ControlFlow::Poll;
-                match event {
-                    Event::Resumed => {
-                        app.resume(event_loop, &models, &ui);
+            if let Some(event_loop) = self.event_loop.take() {
+                event_loop.run(move |event, event_loop, control_flow| {
+                    if let Some(ref surface_state) = self.surface_state {
+                        let (width, height): (u32, u32) = surface_state.window.inner_size().into();
+                        if allowed_to_set_camera {
+                            camera = Camera::new(width as f32, height as f32);
+                            allowed_to_set_camera = false;
+                        }
                     }
-                    Event::Suspended => {
-                        app.surface_state = None;
-                    }
-                    Event::RedrawRequested(_) => {
-                        if let Some(ref surface_state) = app.surface_state {
-                            if let Some(ctx) = &app.context {
-                                if let Some(ref mut renderer) = app.render_state {
-                                    renderer.draw(&world_color, &camera);
 
-                                    if let Err(err) = surface_state.surface.swap_buffers(ctx) {
-                                        println!("Failed to swap buffers after render: {}", err);
+                    *control_flow = ControlFlow::Wait;
+                    match event {
+                        Event::Resumed => {
+                            self.resume(&event_loop, &models, &ui);
+                        }
+                        Event::Suspended => {
+                            self.surface_state = None;
+                        }
+                        Event::RedrawRequested(_) => {
+                            let current_frame_time = std::time::Instant::now();
+                            let timestep = current_frame_time.duration_since(previous_frame_time).as_secs_f32();
+                            previous_frame_time = current_frame_time;
+
+                            println!("{:?}ms", timestep * 1000.0);
+
+                            if let Some(ref surface_state) = self.surface_state {
+                                if let Some(ctx) = &self.context {
+                                    if let Some(ref mut renderer) = self.render_state {
+                                        renderer.draw(&world_color, &camera);
+
+                                        if let Err(err) = surface_state.surface.swap_buffers(ctx) {
+                                            println!(
+                                                "Failed to swap buffers after render: {}",
+                                                err
+                                            );
+                                        }
+                                    }
+                                    self.queue_redraw();
+                                }
+                            }
+                        }
+                        Event::WindowEvent {
+                            event: WindowEvent::Touch(location),
+                            ..
+                        } => {
+                            match location.phase {
+                                winit::event::TouchPhase::Started => {
+                                    active_touch_events.push(location);
+                                }
+                                winit::event::TouchPhase::Ended => {
+                                    active_touch_events.retain(|&t| t.id != location.id);
+                                }
+                                _ => {}
+                            }
+
+                            if active_touch_events.len() == 2 {
+                                println!("Two fingers used: {:?}", active_touch_events);
+                            }
+                        }
+
+                        #[cfg(not(target_os = "android"))]
+                        Event::WindowEvent { event, .. } => match event {
+                            WindowEvent::KeyboardInput { input, .. } => {
+                                if let Some(key) = input.virtual_keycode {
+                                    match key {
+                                        VirtualKeyCode::W => {
+                                            camera.position += camera.speed * camera.orientation;
+                                        }
+                                        VirtualKeyCode::A => {
+                                            camera.position += camera.speed
+                                                * -nalgebra_glm::normalize(&nalgebra_glm::cross(
+                                                    &camera.orientation,
+                                                    &camera.up,
+                                                ))
+                                        }
+                                        VirtualKeyCode::S => {
+                                            camera.position -= camera.speed * camera.orientation
+                                        }
+                                        VirtualKeyCode::D => {
+                                            camera.position += camera.speed
+                                                * nalgebra_glm::normalize(&nalgebra_glm::cross(
+                                                    &camera.orientation,
+                                                    &camera.up,
+                                                ))
+                                        }
+                                        VirtualKeyCode::Space => {
+                                            camera.position += camera.speed * camera.up
+                                        }
+                                        VirtualKeyCode::LControl => {
+                                            camera.position -= camera.speed * camera.up
+                                        }
+                                        VirtualKeyCode::LShift => {
+                                            camera.speed = if input.state == ElementState::Pressed {
+                                                0.4
+                                            } else {
+                                                0.1
+                                            };
+                                        }
+                                        _ => {}
                                     }
                                 }
-                                app.queue_redraw();
                             }
-                        }
-                    }
-                    Event::WindowEvent {
-                        event: WindowEvent::Touch(location),
-                        ..
-                    } => {
-                        match location.phase {
-                            winit::event::TouchPhase::Started => {
-                                active_touch_events.push(location);
-                            }
-                            winit::event::TouchPhase::Ended => {
-                                active_touch_events.retain(|&t| t.id != location.id);
-                            }
-                            _ => {}
-                        }
+                            WindowEvent::MouseInput { state, button, .. } => {
+                                match (state, button) {
+                                    (ElementState::Pressed, MouseButton::Left) => {
+                                        if let Some(ref surface_state) = &self.surface_state {
+                                            surface_state.window.set_cursor_visible(false);
+                                            if camera.first_click {
+                                                surface_state
+                                                    .window
+                                                    .set_cursor_grab(
+                                                        winit::window::CursorGrabMode::Locked,
+                                                    )
+                                                    .unwrap();
 
-                        if active_touch_events.len() == 2 {
-                            println!("Two fingers used: {:?}", active_touch_events);
-                        }
-                    }
+                                                surface_state
+                                                    .window
+                                                    .set_cursor_position(
+                                                        winit::dpi::LogicalPosition::<f64>::from((
+                                                            camera.width as f64 / 2.0,
+                                                            camera.height as f64 / 2.0,
+                                                        )),
+                                                    )
+                                                    .unwrap();
 
-                    #[cfg(not(target_os = "android"))]
-                    Event::WindowEvent { event, .. } => match event {
-                        WindowEvent::KeyboardInput { input, .. } => {
-                            if let Some(key) = input.virtual_keycode {
-                                match key {
-                                    VirtualKeyCode::W => {
-                                        camera.position += camera.speed * camera.orientation;
+                                                surface_state
+                                                    .window
+                                                    .set_cursor_grab(
+                                                        winit::window::CursorGrabMode::Confined,
+                                                    )
+                                                    .unwrap();
+                                                camera.first_click = false;
+
+                                                left_mouse_button_pressed = true;
+                                            }
+                                        }
                                     }
-                                    VirtualKeyCode::A => {
-                                        camera.position += camera.speed
-                                            * -nalgebra_glm::normalize(&nalgebra_glm::cross(
-                                                &camera.orientation,
-                                                &camera.up,
-                                            ))
-                                    }
-                                    VirtualKeyCode::S => {
-                                        camera.position -= camera.speed * camera.orientation
-                                    }
-                                    VirtualKeyCode::D => {
-                                        camera.position += camera.speed
-                                            * nalgebra_glm::normalize(&nalgebra_glm::cross(
-                                                &camera.orientation,
-                                                &camera.up,
-                                            ))
-                                    }
-                                    VirtualKeyCode::Space => {
-                                        camera.position += camera.speed * camera.up
-                                    }
-                                    VirtualKeyCode::LControl => {
-                                        camera.position -= camera.speed * camera.up
-                                    }
-                                    VirtualKeyCode::LShift => {
-                                        camera.speed = if input.state == ElementState::Pressed {
-                                            0.4
-                                        } else {
-                                            0.1
-                                        };
+                                    (ElementState::Released, MouseButton::Left) => {
+                                        if let Some(ref surface_state) = &self.surface_state {
+                                            surface_state
+                                                .window
+                                                .set_cursor_grab(
+                                                    winit::window::CursorGrabMode::Confined,
+                                                )
+                                                .unwrap();
+                                            surface_state.window.set_cursor_visible(true);
+                                            camera.first_click = true;
+                                            left_mouse_button_pressed = false;
+                                        }
                                     }
                                     _ => {}
                                 }
                             }
-                        }
-                        WindowEvent::MouseInput { state, button, .. } => match (state, button) {
-                            (ElementState::Pressed, MouseButton::Left) => {
-                                if let Some(ref surface_state) = app.surface_state {
-                                    surface_state.window.set_cursor_visible(false);
-                                    if camera.first_click {
+                            WindowEvent::CursorMoved { position, .. } => {
+                                if left_mouse_button_pressed {
+                                    if let Some(ref surface_state) = &self.surface_state {
+                                        let mouse_x: f32 = position.x as f32;
+                                        let mouse_y: f32 = position.y as f32;
+
+                                        let rot_x = camera.sensitivity
+                                            * (mouse_y - (camera.height / 2.0))
+                                            / camera.height;
+                                        let rot_y = camera.sensitivity
+                                            * (mouse_x - (camera.width / 2.0))
+                                            / camera.width;
+
+                                        let new_orientation = nalgebra_glm::rotate_vec3(
+                                            &camera.orientation,
+                                            -rot_x as f32,
+                                            &nalgebra_glm::normalize(&nalgebra_glm::cross(
+                                                &camera.orientation,
+                                                &camera.up,
+                                            )),
+                                        );
+
+                                        if (nalgebra_glm::angle(&new_orientation, &camera.up)
+                                            - 90.0)
+                                            .abs()
+                                            <= 85.0
+                                        {
+                                            camera.orientation = new_orientation;
+                                        }
+
+                                        camera.orientation = nalgebra_glm::rotate_vec3(
+                                            &camera.orientation,
+                                            -rot_y as f32,
+                                            &camera.up,
+                                        );
+
                                         surface_state
                                             .window
                                             .set_cursor_grab(winit::window::CursorGrabMode::Locked)
@@ -354,116 +446,18 @@ pub mod overture {
                                                 winit::window::CursorGrabMode::Confined,
                                             )
                                             .unwrap();
-                                        camera.first_click = false;
-
-                                        left_mouse_button_pressed = true;
                                     }
                                 }
                             }
-                            (ElementState::Released, MouseButton::Left) => {
-                                if let Some(ref surface_state) = app.surface_state {
-                                    surface_state
-                                        .window
-                                        .set_cursor_grab(winit::window::CursorGrabMode::Confined)
-                                        .unwrap();
-                                    surface_state.window.set_cursor_visible(true);
-                                    camera.first_click = true;
-                                    left_mouse_button_pressed = false;
-                                }
+                            WindowEvent::CloseRequested => {
+                                *control_flow = ControlFlow::Exit;
                             }
                             _ => {}
                         },
-                        WindowEvent::CursorMoved { position, .. } => {
-                            if left_mouse_button_pressed {
-                                if let Some(ref surface_state) = app.surface_state {
-                                    let mouse_x: f32 = position.x as f32;
-                                    let mouse_y: f32 = position.y as f32;
-
-                                    let rot_x = camera.sensitivity
-                                        * (mouse_y - (camera.height / 2.0))
-                                        / camera.height;
-                                    let rot_y = camera.sensitivity
-                                        * (mouse_x - (camera.width / 2.0))
-                                        / camera.width;
-
-                                    let new_orientation = nalgebra_glm::rotate_vec3(
-                                        &camera.orientation,
-                                        -rot_x as f32,
-                                        &nalgebra_glm::normalize(&nalgebra_glm::cross(
-                                            &camera.orientation,
-                                            &camera.up,
-                                        )),
-                                    );
-
-                                    if (nalgebra_glm::angle(&new_orientation, &camera.up) - 90.0)
-                                        .abs()
-                                        <= 85.0
-                                    {
-                                        camera.orientation = new_orientation;
-                                    }
-
-                                    camera.orientation = nalgebra_glm::rotate_vec3(
-                                        &camera.orientation,
-                                        -rot_y as f32,
-                                        &camera.up,
-                                    );
-
-                                    surface_state
-                                        .window
-                                        .set_cursor_grab(winit::window::CursorGrabMode::Locked)
-                                        .unwrap();
-
-                                    surface_state
-                                        .window
-                                        .set_cursor_position(
-                                            winit::dpi::LogicalPosition::<f64>::from((
-                                                camera.width as f64 / 2.0,
-                                                camera.height as f64 / 2.0,
-                                            )),
-                                        )
-                                        .unwrap();
-
-                                    surface_state
-                                        .window
-                                        .set_cursor_grab(winit::window::CursorGrabMode::Confined)
-                                        .unwrap();
-                                }
-                            }
-                        }
-                        WindowEvent::CloseRequested => {
-                            *control_flow = ControlFlow::Exit;
-                        }
                         _ => {}
-                    },
-                    _ => {}
-                }
-            });
-        }
-    }
-
-    pub struct Vec3 {
-        pub x: f32,
-        pub y: f32,
-        pub z: f32,
-    }
-
-    impl Vec3 {
-        pub fn new(x: f32, y: f32, z: f32) -> Self {
-            Vec3 { x, y, z }
-        }
-    }
-
-    #[derive(Clone)]
-    pub struct RGBA {
-        pub r: f32,
-        pub g: f32,
-        pub b: f32,
-        pub a: f32,
-    }
-
-    impl RGBA {
-        pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-            RGBA { r, g, b, a }
+                    }
+                });
+            }
         }
     }
 

@@ -1,4 +1,3 @@
-use crate::overture;
 use crate::renderer::gl;
 use crate::renderer::mesh;
 use crate::renderer::texture;
@@ -19,8 +18,8 @@ pub struct Model {
     pub gltf_file: &'static [u8],
     pub bin_file: &'static [u8],
     pub texture_file: &'static [u8],
-    pub position: overture::Vec3,
-    pub scale: overture::Vec3,
+    pub position: types::Vec3,
+    pub scale: types::Vec3,
     pub rotation: (f32, types::RotAxis),
 }
 
@@ -34,18 +33,18 @@ impl Model {
             gltf_file,
             bin_file,
             texture_file,
-            position: overture::Vec3::new(0.0, 0.0, 0.0),
-            scale: overture::Vec3::new(0.01, 0.01, 0.01),
+            position: types::Vec3::new(0.0, 0.0, 0.0),
+            scale: types::Vec3::new(0.01, 0.01, 0.01),
             rotation: (0.0, types::RotAxis::Pitch),
         };
     }
 
-    pub fn set_position(mut self, position: overture::Vec3) -> Self {
+    pub fn set_position(mut self, position: types::Vec3) -> Self {
         self.position = position;
         self
     }
 
-    pub fn set_scale(mut self, scale: overture::Vec3) -> Self {
+    pub fn set_scale(mut self, scale: types::Vec3) -> Self {
         self.scale = scale;
         self
     }
