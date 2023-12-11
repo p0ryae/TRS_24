@@ -57,8 +57,8 @@ sed -i 's/APPLABEL/'"$APP_LEBEL"'/g' AndroidManifest.xml
 
 "$SDK_TOOLCHAIN_PATH/aapt" package -f -F "../target/packaged/$APP_NAME_LOWERCASED-unsigned.apk" -M "AndroidManifest.xml" -I "./android.jar"
 
-if [ -f "../target/$ARCH/debug/lib$APP_NAME_LOWERCASED.so" ]; then
-    cp ../target/$ARCH/debug/lib$APP_NAME_LOWERCASED.so lib/$ARCH_LIB/lib$APP_NAME_LOWERCASED.so
+if [ -f "../target/$ARCH/release/lib$APP_NAME_LOWERCASED.so" ]; then
+    cp ../target/$ARCH/release/lib$APP_NAME_LOWERCASED.so lib/$ARCH_LIB/lib$APP_NAME_LOWERCASED.so
 
     "$SDK_TOOLCHAIN_PATH/aapt" add "../target/packaged/$APP_NAME_LOWERCASED-unsigned.apk" "lib/$ARCH_LIB/lib$APP_NAME_LOWERCASED.so"
 

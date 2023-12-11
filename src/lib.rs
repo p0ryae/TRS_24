@@ -22,19 +22,23 @@ pub mod overture {
         HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
     };
     use std::num::NonZeroU32;
+    pub use winit::event::{ElementState, MouseButton, TouchPhase, VirtualKeyCode};
     use winit::event::{Event, WindowEvent};
     use winit::event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget};
-
-    #[cfg(not(target_os = "android"))]
-    use winit::event::{ElementState, MouseButton, VirtualKeyCode};
 
     struct SurfaceState {
         window: winit::window::Window,
         surface: glutin::surface::Surface<glutin::surface::WindowSurface>,
     }
 
+    pub enum CustomEvent {
+        Keyboard(VirtualKeyCode, ElementState, Box<dyn Fn()>),
+        Mouse(MouseButton, ElementState, Box<dyn Fn()>),
+        Touch(TouchPhase, Box<dyn Fn()>),
+    }
+
     pub struct Scene {
-        event_loop: Option<EventLoop<()>>,
+        event_loop: Option<EventLoop<CustomEvent>>,
         winsys_display: Option<RawDisplayHandle>,
         glutin_display: Option<Display>,
         surface_state: Option<SurfaceState>,
@@ -43,7 +47,7 @@ pub mod overture {
     }
 
     impl Scene {
-        pub fn new(event_loop: EventLoop<()>) -> Self {
+        pub fn new(event_loop: EventLoop<CustomEvent>) -> Self {
             #[cfg(not(target_os = "android"))]
             if std::env::var("MESA_GLES_VERSION_OVERRIDE").is_err() {
                 // Fallback to GLES version 2.0 for test runs (mesa drivers particularly)
@@ -115,7 +119,7 @@ pub mod overture {
             }
         }
 
-        pub fn config_template(raw_window_handle: RawWindowHandle) -> ConfigTemplate {
+        fn config_template(raw_window_handle: RawWindowHandle) -> ConfigTemplate {
             let builder = ConfigTemplateBuilder::new()
                 .with_alpha_size(8)
                 .compatible_with_native_window(raw_window_handle)
@@ -226,16 +230,17 @@ pub mod overture {
         }
 
         pub fn run(mut self, world_color: types::RGBA, models: Vec<Model>, ui: Vec<ui::Element>) {
-            let mut active_touch_events: Vec<winit::event::Touch> = Vec::new();
-
             let mut camera: Camera = Camera::new(0.0, 0.0);
             let mut allowed_to_set_camera: bool = true;
 
-            #[cfg(not(target_os = "android"))]
+            #[cfg(debug_assertions)]
             let mut left_mouse_button_pressed = false;
 
-            let mut previous_frame_time = std::time::Instant::now();
+            let mut key_input_vec: Vec<(VirtualKeyCode, ElementState, Box<dyn Fn()>)> = Vec::new();
+            let mut mouse_input_vec: Vec<(MouseButton, ElementState, Box<dyn Fn()>)> = Vec::new();
+            let mut touch_input_vec: Vec<(TouchPhase, Box<dyn Fn()>)> = Vec::new();
 
+            let mut previous_frame_time = std::time::Instant::now();
             if let Some(event_loop) = self.event_loop.take() {
                 event_loop.run(move |event, event_loop, control_flow| {
                     if let Some(ref surface_state) = self.surface_state {
@@ -256,10 +261,12 @@ pub mod overture {
                         }
                         Event::RedrawRequested(_) => {
                             let current_frame_time = std::time::Instant::now();
-                            let timestep = current_frame_time.duration_since(previous_frame_time).as_secs_f32();
+                            let _timestep = current_frame_time
+                                .duration_since(previous_frame_time)
+                                .as_secs_f32();
                             previous_frame_time = current_frame_time;
 
-                            println!("{:?}ms", timestep * 1000.0);
+                            //println!("{:?}ms", timestep * 1000.0);
 
                             if let Some(ref surface_state) = self.surface_state {
                                 if let Some(ctx) = &self.context {
@@ -277,29 +284,31 @@ pub mod overture {
                                 }
                             }
                         }
+                        Event::UserEvent(custom_event) => match custom_event {
+                            CustomEvent::Keyboard(key, state, result) => {
+                                key_input_vec.push((key, state, result))
+                            }
+                            CustomEvent::Touch(touch, result) => {
+                                touch_input_vec.push((touch, result))
+                            }
+                            CustomEvent::Mouse(mouse, state, result) => {
+                                mouse_input_vec.push((mouse, state, result))
+                            }
+                        },
                         Event::WindowEvent {
                             event: WindowEvent::Touch(location),
                             ..
                         } => {
-                            match location.phase {
-                                winit::event::TouchPhase::Started => {
-                                    active_touch_events.push(location);
+                            for phase in &touch_input_vec {
+                                if location.phase == phase.0 {
+                                    (phase.1)();
                                 }
-                                winit::event::TouchPhase::Ended => {
-                                    active_touch_events.retain(|&t| t.id != location.id);
-                                }
-                                _ => {}
-                            }
-
-                            if active_touch_events.len() == 2 {
-                                println!("Two fingers used: {:?}", active_touch_events);
                             }
                         }
-
-                        #[cfg(not(target_os = "android"))]
                         Event::WindowEvent { event, .. } => match event {
                             WindowEvent::KeyboardInput { input, .. } => {
                                 if let Some(key) = input.virtual_keycode {
+                                    #[cfg(debug_assertions)]
                                     match key {
                                         VirtualKeyCode::W => {
                                             camera.position += camera.speed * camera.orientation;
@@ -336,9 +345,19 @@ pub mod overture {
                                         }
                                         _ => {}
                                     }
+
+                                    for given_key in &key_input_vec {
+                                        match (input.state, key) {
+                                            (s, b) if s == given_key.1 && b == given_key.0 => {
+                                                (given_key.2)();
+                                            }
+                                            _ => {}
+                                        }
+                                    }
                                 }
                             }
                             WindowEvent::MouseInput { state, button, .. } => {
+                                #[cfg(debug_assertions)]
                                 match (state, button) {
                                     (ElementState::Pressed, MouseButton::Left) => {
                                         if let Some(ref surface_state) = &self.surface_state {
@@ -386,9 +405,20 @@ pub mod overture {
                                             left_mouse_button_pressed = false;
                                         }
                                     }
+
                                     _ => {}
                                 }
+
+                                for given_mouse in &mouse_input_vec {
+                                    match (state, button) {
+                                        (s, b) if s == given_mouse.1 && b == given_mouse.0 => {
+                                            (given_mouse.2)();
+                                        }
+                                        _ => {}
+                                    }
+                                }
                             }
+                            #[cfg(debug_assertions)]
                             WindowEvent::CursorMoved { position, .. } => {
                                 if left_mouse_button_pressed {
                                     if let Some(ref surface_state) = &self.surface_state {
