@@ -5,7 +5,7 @@ edition = "2021"
 keywords = ["gamedev", "graphics", "android", "trs_24", "engine"]
 categories = ["game-engines", "game-development", "graphics", "rendering"]
 license = "MIT OR Apache-2.0"
-description = "An OpenGL-Powered Android Game Engine"
+description = "An OpenGL-Powered Game Engine (OpenGL 2.0+)"
 repository = "https://github.com/p0ryae/TRS_24"
 exclude = [
     "assets/*",
@@ -18,7 +18,6 @@ winit = { version = "0.28.7", features = ["android-native-activity"] }
 # Will replace this with the main repo once my purposed change is merged (See https://github.com/rust-windowing/glutin/pull/1648).
 glutin = { git = "https://github.com/p0ryae/glutin", version = "0.31.1" }
 raw-window-handle = "0.5.0"
-android_logger = "0.13.3"
 stb_image_rust = "2.27.2"
 nalgebra-glm = "0.18.0"
 json = "0.12.4"

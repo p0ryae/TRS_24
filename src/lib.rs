@@ -4,9 +4,6 @@ pub mod renderer;
 pub mod types;
 pub mod ui;
 
-#[cfg(target_os = "android")]
-pub use android_logger;
-
 pub mod overture {
     use crate::renderer::Camera;
     use crate::renderer::Model;

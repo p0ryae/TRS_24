@@ -1,8 +1,3 @@
-/**
- * This file is used for pre-build testing purposes.
- * Once testing phase is over, you transfer the main fn content to android_main fn in lib.rs (except the event_loop).
- * The goal of this is to speed up the testing process. You won't have to do builds every time to test something.
- */
 use trs_24::{overture::*, types::*};
 
 pub fn main() {
