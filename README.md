@@ -38,7 +38,7 @@ Both files will have their own respectable structure:
 ```rust
 #![cfg(target_os = "android")]
 
-use trs_24::{android_logger, overture::*};
+use trs_24::overture::*;
 
 #[no_mangle]
 pub fn android_main(app: AndroidApp) {
