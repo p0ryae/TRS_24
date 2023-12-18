@@ -1,7 +1,7 @@
 use crate::renderer::gl;
 use crate::types;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ShapeBuilder {
     pub shape: types::Shape,
     pub is_hud: bool,

@@ -13,8 +13,8 @@ pub struct Renderer {
     program_3d: gl::types::GLuint,
     program_2d: gl::types::GLuint,
     gl: gl::Gl,
-    models: Vec<model::ReadyModel>,
-    ui: Vec<types::ElementType>,
+    pub models: Vec<model::ReadyModel>,
+    pub ui: Vec<types::Element>,
 }
 
 impl Renderer {
@@ -105,12 +105,12 @@ impl Renderer {
                 models.push(x);
             }
 
-            let mut ui: Vec<types::ElementType> = Vec::new();
+            let mut ui: Vec<types::Element> = Vec::new();
 
             for element in not_ready_ui {
                 match &element.el_type {
-                    types::ElementType::Shape(shape_builder) => {
-                        let x = types::ElementType::Shape(ui::ShapeBuilder::new_instance(
+                    types::Element::Shape(shape_builder) => {
+                        let x = types::Element::Shape(ui::ShapeBuilder::new_instance(
                             gl.clone(),
                             shape_builder,
                             element.is_hud,
@@ -128,8 +128,8 @@ impl Renderer {
                         ));
                         ui.push(x);
                     }
-                    types::ElementType::Text(text_builder) => {
-                        let x = types::ElementType::Text(ui::TextBuilder::new_instance(
+                    types::Element::Text(text_builder) => {
+                        let x = types::Element::Text(ui::TextBuilder::new_instance(
                             gl.clone(),
                             text_builder,
                             element.is_hud,
@@ -184,7 +184,7 @@ impl Renderer {
             self.gl.Disable(gl::DEPTH_TEST);
             for element in &self.ui {
                 match element {
-                    types::ElementType::Shape(shape_instance) => {
+                    types::Element::Shape(shape_instance) => {
                         camera.adjust(
                             self.gl.clone(),
                             self.program_2d,
@@ -199,7 +199,7 @@ impl Renderer {
                         );
                         shape_instance.draw(self.program_2d);
                     }
-                    types::ElementType::Text(text_instance) => {
+                    types::Element::Text(text_instance) => {
                         camera.adjust(
                             self.gl.clone(),
                             self.program_2d,

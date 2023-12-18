@@ -29,9 +29,9 @@ pub mod overture {
     }
 
     pub enum CustomEvent {
-        Keyboard(VirtualKeyCode, ElementState, Box<dyn Fn()>),
-        Mouse(MouseButton, ElementState, Box<dyn Fn()>),
-        Touch(TouchPhase, Box<dyn Fn()>),
+        Keyboard(VirtualKeyCode, ElementState, Box<dyn Fn(&mut Scene)>),
+        Mouse(MouseButton, ElementState, Box<dyn Fn(&mut Scene)>),
+        Touch(TouchPhase, Box<dyn Fn(&mut Scene)>),
     }
 
     pub struct Scene {
@@ -40,7 +40,7 @@ pub mod overture {
         glutin_display: Option<Display>,
         surface_state: Option<SurfaceState>,
         context: Option<glutin::context::PossiblyCurrentContext>,
-        render_state: Option<Renderer>,
+        pub render_state: Option<Renderer>,
     }
 
     impl Scene {
@@ -226,16 +226,23 @@ pub mod overture {
             self.queue_redraw();
         }
 
-        pub fn run(mut self, world_color: types::RGBA, models: Vec<Model>, ui: Vec<ui::Element>) {
+        pub fn run(
+            mut self,
+            world_color: types::RGBA,
+            model_pipeline: Vec<Model>,
+            ui_pipeline: Vec<ui::Element>,
+        ) {
             let mut camera: Camera = Camera::new(0.0, 0.0);
             let mut allowed_to_set_camera: bool = true;
 
             #[cfg(debug_assertions)]
             let mut left_mouse_button_pressed = false;
 
-            let mut key_input_vec: Vec<(VirtualKeyCode, ElementState, Box<dyn Fn()>)> = Vec::new();
-            let mut mouse_input_vec: Vec<(MouseButton, ElementState, Box<dyn Fn()>)> = Vec::new();
-            let mut touch_input_vec: Vec<(TouchPhase, Box<dyn Fn()>)> = Vec::new();
+            let mut key_input_vec: Vec<(VirtualKeyCode, ElementState, Box<dyn Fn(&mut Scene)>)> =
+                Vec::new();
+            let mut mouse_input_vec: Vec<(MouseButton, ElementState, Box<dyn Fn(&mut Scene)>)> =
+                Vec::new();
+            let mut touch_input_vec: Vec<(TouchPhase, Box<dyn Fn(&mut Scene)>)> = Vec::new();
 
             let mut previous_frame_time = std::time::Instant::now();
             if let Some(event_loop) = self.event_loop.take() {
@@ -251,7 +258,7 @@ pub mod overture {
                     *control_flow = ControlFlow::Wait;
                     match event {
                         Event::Resumed => {
-                            self.resume(&event_loop, &models, &ui);
+                            self.resume(&event_loop, &model_pipeline, &ui_pipeline);
                         }
                         Event::Suspended => {
                             self.surface_state = None;
@@ -298,7 +305,7 @@ pub mod overture {
                         } => {
                             for phase in &touch_input_vec {
                                 if location.phase == phase.0 {
-                                    (phase.1)();
+                                    (phase.1)(&mut self);
                                 }
                             }
                         }
@@ -346,7 +353,7 @@ pub mod overture {
                                     for given_key in &key_input_vec {
                                         match (input.state, key) {
                                             (s, b) if s == given_key.1 && b == given_key.0 => {
-                                                (given_key.2)();
+                                                (given_key.2)(&mut self);
                                             }
                                             _ => {}
                                         }
@@ -409,7 +416,7 @@ pub mod overture {
                                 for given_mouse in &mouse_input_vec {
                                     match (state, button) {
                                         (s, b) if s == given_mouse.1 && b == given_mouse.0 => {
-                                            (given_mouse.2)();
+                                            (given_mouse.2)(&mut self);
                                         }
                                         _ => {}
                                     }

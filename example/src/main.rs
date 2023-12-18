@@ -26,7 +26,7 @@ pub fn main() {
     .set_scale(Vec3::new(0.08, 0.08, 0.08));
 
     // Create a shape element with square type
-    let textbox = trs_24::ui::Element::new(trs_24::types::ElementType::Shape(
+    let textbox = trs_24::ui::Element::new(trs_24::types::Element::Shape(
         trs_24::ui::ShapeBuilder::new(trs_24::types::Shape::Square),
     ))
     .set_color(RGBA::new(0.5, 0.0, 1.0, 0.4))
@@ -34,24 +34,26 @@ pub fn main() {
     .set_scale(Vec3::new(0.7, 0.2, 0.5));
 
     // Create a text element with specified font and size
-    let text = trs_24::ui::Element::new(trs_24::types::ElementType::Text(
-        trs_24::ui::TextBuilder::new(
+    let text =
+        trs_24::ui::Element::new(trs_24::types::Element::Text(trs_24::ui::TextBuilder::new(
             "TRS_24 Demo".to_string(),
             include_bytes!("../../assets/fonts/Antonio-Bold.ttf"),
             60,
-        ),
-    ))
-    .set_color(RGBA::new(1.0, 1.0, 1.0, 1.0))
-    .set_scale(Vec3::new(0.002, 0.002, 0.002))
-    .set_position(Vec3::new(-0.3, -0.8, 0.0));
+        )))
+        .set_color(RGBA::new(1.0, 1.0, 1.0, 1.0))
+        .set_scale(Vec3::new(0.002, 0.002, 0.002))
+        .set_position(Vec3::new(-0.3, -0.8, 0.0));
 
-    // When pressing left mouse button, print "Left Click!"
+    // When pressing right mouse button, remove a Model and UI element with id 1
     event_loop_proxy
         .send_event(CustomEvent::Mouse(
-            MouseButton::Left,
+            MouseButton::Right,
             ElementState::Pressed,
-            Box::new(|| {
-                println!("Left Click!");
+            Box::new(|scene| {
+                if let Some(ref mut renderer) = scene.render_state {
+                    renderer.models.remove(1);
+                    renderer.ui.remove(1);
+                }
             }),
         ))
         .ok();

@@ -2,7 +2,7 @@ use crate::renderer::gl;
 use crate::types;
 use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TextBuilder {
     text: String,
     font: &'static [u8],
@@ -17,7 +17,7 @@ pub struct TextBuilder {
     vbo: gl::types::GLuint,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Character {
     texture: u32,
     size: (i32, i32),

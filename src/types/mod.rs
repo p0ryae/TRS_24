@@ -7,13 +7,14 @@ pub enum RotAxis {
     Yaw,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Shape {
     Square,
     Triangle,
 }
 
-pub enum ElementType {
+#[derive(Clone, Debug)]
+pub enum Element {
     Shape(ShapeBuilder),
     Text(TextBuilder),
 }
@@ -30,7 +31,7 @@ impl Vec3 {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RGB {
     pub r: f32,
     pub g: f32,
@@ -43,7 +44,7 @@ impl RGB {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RGBA {
     pub r: f32,
     pub g: f32,

@@ -1,7 +1,7 @@
 use crate::types;
 
 pub struct Element {
-    pub el_type: types::ElementType,
+    pub el_type: types::Element,
     pub is_hud: bool,
     pub color: types::RGBA,
     pub position: types::Vec3,
@@ -10,7 +10,7 @@ pub struct Element {
 }
 
 impl Element {
-    pub fn new(el_type: types::ElementType) -> Self {
+    pub fn new(el_type: types::Element) -> Self {
         Self {
             el_type,
             is_hud: false,
