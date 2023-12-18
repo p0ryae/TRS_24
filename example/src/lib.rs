@@ -39,16 +39,15 @@ pub fn android_main(app: AndroidApp) {
     .set_scale(Vec3::new(0.7, 0.2, 0.5));
 
     // Create a text element with specified font and size
-    let text = trs_24::ui::Element::new(trs_24::types::Element::Text(
-        trs_24::ui::TextBuilder::new(
+    let text =
+        trs_24::ui::Element::new(trs_24::types::Element::Text(trs_24::ui::TextBuilder::new(
             "TRS_24 Demo".to_string(),
             include_bytes!("../../assets/fonts/Antonio-Bold.ttf"),
             60,
-        ),
-    ))
-    .set_color(RGBA::new(1.0, 1.0, 1.0, 1.0))
-    .set_scale(Vec3::new(0.002, 0.002, 0.002))
-    .set_position(Vec3::new(-0.3, -0.8, 0.0));
+        )))
+        .set_color(RGBA::new(1.0, 1.0, 1.0, 1.0))
+        .set_scale(Vec3::new(0.002, 0.002, 0.002))
+        .set_position(Vec3::new(-0.3, -0.8, 0.0));
 
     // When a tap on the screen starts, remove a Model and UI element with id 1
     event_loop_proxy
@@ -56,8 +55,12 @@ pub fn android_main(app: AndroidApp) {
             TouchPhase::Started,
             Box::new(|scene| {
                 if let Some(ref mut renderer) = scene.render_state {
-                    renderer.models.remove(1);
-                    renderer.ui.remove(1);
+                    if let Some(_) = renderer.models.get(1) {
+                        renderer.models.remove(1);
+                    }
+                    if let Some(_) = renderer.ui.get(1) {
+                        renderer.ui.remove(1);
+                    }
                 }
             }),
         ))

@@ -51,8 +51,12 @@ pub fn main() {
             ElementState::Pressed,
             Box::new(|scene| {
                 if let Some(ref mut renderer) = scene.render_state {
-                    renderer.models.remove(1);
-                    renderer.ui.remove(1);
+                    if let Some(_) = renderer.models.get(1) {
+                        renderer.models.remove(1);
+                    }
+                    if let Some(_) = renderer.ui.get(1) {
+                        renderer.ui.remove(1);
+                    }
                 }
             }),
         ))
