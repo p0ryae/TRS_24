@@ -1,6 +1,6 @@
 #![cfg(target_os = "android")]
 
-use trs_24::{overture::{*, TouchPhase}, types::*};
+use trs_24::{overture::*, types::*};
 
 #[no_mangle]
 pub fn android_main(app: AndroidApp) {

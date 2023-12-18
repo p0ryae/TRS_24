@@ -14,7 +14,7 @@ REM Replace this with your actual SDK build-tools path
 SET SDK_TOOLCHAIN_PATH="/home/porya/Android/Sdk/build-tools/34.0.0" 
 
 REM Your app name
-REM Ensure this MATCHES with your Cargo.toml's [package] --> name
+REM Ensure this MATCHES with your Cargo.toml's [package] -- name
 REM AVOID WHITESPACES!
 SET APP_NAME="trs_example"
 
