@@ -14,9 +14,7 @@ exclude = [
 
 [dependencies]
 winit = { version = "0.28.7", features = ["android-native-activity"] }
-# My personal glutin fork that includes a GLES2 patch
-# Will replace this with the main repo once my purposed change is merged (See https://github.com/rust-windowing/glutin/pull/1648).
-glutin = { git = "https://github.com/p0ryae/glutin", version = "0.31.1" }
+glutin = "0.31.2"
 raw-window-handle = "0.5.0"
 stb_image_rust = "2.27.2"
 nalgebra-glm = "0.18.0"
