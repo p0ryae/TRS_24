@@ -24,7 +24,7 @@ impl Camera {
             position: nalgebra_glm::vec3(0.0, 0.0, 3.0),
             orientation: nalgebra_glm::vec3(0.0, 0.0, -1.0),
             up: nalgebra_glm::vec3(0.0, 1.0, 0.0),
-            speed: 0.3,
+            speed: 0.25,
             sensitivity: 0.01,
             first_click: true,
         }

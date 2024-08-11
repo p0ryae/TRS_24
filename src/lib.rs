@@ -19,6 +19,7 @@ pub mod overture {
         HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
     };
     use std::num::NonZeroU32;
+    use std::time::Instant;
     pub use winit::event::{ElementState, MouseButton, TouchPhase};
     use winit::event::{Event, WindowEvent};
     use winit::event_loop::ActiveEventLoop;
@@ -241,10 +242,26 @@ pub mod overture {
                 Vec::new();
             let mut touch_input_vec: Vec<(TouchPhase, Box<dyn Fn(&mut Scene)>)> = Vec::new();
 
-            let mut previous_frame_time = std::time::Instant::now();
+            // let mut previous_frame_time = Instant::now();
 
-            // let mut imgui = imgui::Context::create();
-            // let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
+            let mut imgui = imgui::Context::create();
+            let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
+
+            imgui.fonts().add_font(&[imgui::FontSource::TtfData {
+                data: include_bytes!("../assets/fonts/Antonio-Bold.ttf"),
+                size_pixels: 13.0,
+                config: Some(imgui::FontConfig {
+                    rasterizer_multiply: 1.5,
+                    oversample_h: 4,
+                    oversample_v: 4,
+                    ..imgui::FontConfig::default()
+                }),
+            }]);
+
+            imgui.fonts().build_alpha8_texture();
+            imgui.fonts().build_rgba32_texture();
+
+            imgui.set_ini_filename(None);
 
             if let Some(event_loop) = self.event_loop.take() {
                 let _ = event_loop.run(move |event, event_loop| {
@@ -255,11 +272,11 @@ pub mod overture {
                             allowed_to_set_camera = false;
                         }
 
-                        // platform.attach_window(
-                        //     imgui.io_mut(),
-                        //     &surface_state.window,
-                        //     imgui_winit_support::HiDpiMode::Default,
-                        // );
+                        platform.attach_window(
+                            imgui.io_mut(),
+                            &surface_state.window,
+                            imgui_winit_support::HiDpiMode::Rounded,
+                        );
                     }
 
                     match event {
@@ -281,33 +298,22 @@ pub mod overture {
                         }
                         Event::WindowEvent { event, .. } => match event {
                             WindowEvent::RedrawRequested => {
-                                // let ui = imgui.frame();
+                                // let current_frame_time = std::time::Instant::now();
+                                // let timestep = current_frame_time
+                                //     .duration_since(previous_frame_time)
+                                //     .as_secs_f32();
+                                // previous_frame_time = current_frame_time;
 
-                                // ui.window("Hello world")
-                                //     .size([300.0, 100.0], imgui::Condition::FirstUseEver)
-                                //     .build(|| {
-                                //         ui.text("Hello world!");
-                                //         ui.text("こんにちは世界！");
-                                //         ui.text("This...is...imgui-rs!");
-                                //         ui.separator();
-                                //         let mouse_pos = ui.io().mouse_pos;
-                                //         ui.text(format!(
-                                //             "Mouse Position: ({:.1},{:.1})",
-                                //             mouse_pos[0], mouse_pos[1]
-                                //         ));
-                                //     });
-
-                                // imgui.render();
-
-                                let current_frame_time = std::time::Instant::now();
-                                let _timestep = current_frame_time
-                                    .duration_since(previous_frame_time)
-                                    .as_secs_f32();
-                                previous_frame_time = current_frame_time;
-
-                                //println!("{:?}ms", timestep * 1000.0);
+                                // println!("{:?}ms", timestep * 1000.0);
 
                                 if let Some(ref surface_state) = self.surface_state {
+                                    if imgui.fonts().is_built() {
+                                        let ui = imgui.frame();
+                                        ui.show_demo_window(&mut true);
+                                        platform.prepare_render(ui, &surface_state.window);
+                                        imgui.render();
+                                    }
+
                                     if let Some(ctx) = &self.context {
                                         if let Some(ref mut renderer) = self.render_state {
                                             renderer.draw(&world_color, &camera);
