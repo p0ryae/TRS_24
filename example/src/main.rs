@@ -25,6 +25,15 @@ pub fn main() {
     .set_position(Vec3::new(-0.5, 0.0, 0.0))
     .set_scale(Vec3::new(0.08, 0.08, 0.08));
 
+    let sword = trs_24::renderer::Model::new(
+        include_bytes!("../../assets/models/sword/scene.gltf"),
+        include_bytes!("../../assets/models/sword/scene.bin"),
+        include_bytes!("../../assets/models/sword/texture.jpeg"),
+    )
+    .set_position(Vec3::new(-1.6, -0.5, -1.0))
+    .set_scale(Vec3::new(0.05, 0.05, 0.05))
+    .set_rotation(42.0, RotAxis::Roll);
+
     // Create a shape element with square type
     let textbox = trs_24::ui::Element::new(trs_24::types::Element::Shape(
         trs_24::ui::ShapeBuilder::new(trs_24::types::Shape::Square),
@@ -66,7 +75,7 @@ pub fn main() {
     // Run the scene with set world color, passed models, and ui elements
     Scene::new(event_loop).run(
         RGBA::new(0.1, 0.1, 0.1, 1.0),
-        vec![duck, map],
+        vec![duck, map, sword],
         vec![textbox, text],
     );
 }
