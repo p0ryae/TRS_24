@@ -1,6 +1,6 @@
 [package]
 name = "trs_24"
-version = "0.1.6"
+version = "0.2.0"
 rust-version = "1.75.0"
 edition = "2021"
 keywords = ["gamedev", "graphics", "android", "trs_24", "engine"]
@@ -27,7 +27,7 @@ nalgebra-glm = "0.18.0"
 json = "0.12.4"
 freetype-rs = "0.34.1"
 imgui = "0.12.0"
-imgui-winit-support = { git = "https://github.com/julcst/imgui-winit-support", rev = "29584c863c5517a7f30e09205b84e1601f4ddb92" }
+# imgui-winit-support = { git = "https://github.com/julcst/imgui-winit-support", rev = "29584c863c5517a7f30e09205b84e1601f4ddb92" }
 
 [build-dependencies]
 gl_generator = "0.14"
