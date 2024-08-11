@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, warnings)]
 
 pub mod renderer;
 pub mod types;
@@ -19,9 +19,12 @@ pub mod overture {
         HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
     };
     use std::num::NonZeroU32;
-    pub use winit::event::{ElementState, MouseButton, TouchPhase, VirtualKeyCode};
+    pub use winit::event::{ElementState, MouseButton, TouchPhase};
     use winit::event::{Event, WindowEvent};
-    use winit::event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget};
+    use winit::event_loop::ActiveEventLoop;
+    pub use winit::event_loop::EventLoop;
+    use winit::keyboard::PhysicalKey;
+    pub use winit::keyboard::{Key, KeyCode};
 
     struct SurfaceState {
         window: winit::window::Window,
@@ -29,7 +32,7 @@ pub mod overture {
     }
 
     pub enum CustomEvent {
-        Keyboard(VirtualKeyCode, ElementState, Box<dyn Fn(&mut Scene)>),
+        Keyboard(Key, ElementState, Box<dyn Fn(&mut Scene)>),
         Mouse(MouseButton, ElementState, Box<dyn Fn(&mut Scene)>),
         Touch(TouchPhase, Box<dyn Fn(&mut Scene)>),
     }
@@ -51,7 +54,7 @@ pub mod overture {
                 std::env::set_var("MESA_GLES_VERSION_OVERRIDE", "2.0");
             }
 
-            let winsys_display = event_loop.raw_display_handle();
+            let winsys_display = event_loop.raw_display_handle().unwrap();
             Self {
                 event_loop: Some(event_loop),
                 winsys_display: Some(winsys_display),
@@ -84,7 +87,7 @@ pub mod overture {
 
         fn ensure_glutin_display(&mut self, window: &winit::window::Window) {
             if self.glutin_display.is_none() {
-                let raw_window_handle = window.raw_window_handle();
+                let raw_window_handle = window.raw_window_handle().unwrap();
                 self.glutin_display = Some(Self::create_display(
                     self.winsys_display.unwrap(),
                     raw_window_handle,
@@ -126,14 +129,13 @@ pub mod overture {
             builder.build()
         }
 
-        fn ensure_surface_and_context<T>(&mut self, event_loop: &EventLoopWindowTarget<T>) {
-            let window = winit::window::WindowBuilder::new()
+        fn ensure_surface_and_context(&mut self, event_loop: &ActiveEventLoop) {
+            let window_attributes = winit::window::WindowAttributes::default()
                 .with_inner_size(winit::dpi::LogicalSize::new(960.0, 640.0))
                 .with_min_inner_size(winit::dpi::LogicalSize::new(480.0, 320.0))
-                .with_title("TRS_24 Window")
-                .build(&event_loop)
-                .unwrap();
-            let raw_window_handle = window.raw_window_handle();
+                .with_title("TRS_24 Window");
+            let window = event_loop.create_window(window_attributes).unwrap();
+            let window_handle = window.raw_window_handle().unwrap();
 
             self.ensure_glutin_display(&window);
             let glutin_display = self
@@ -141,7 +143,7 @@ pub mod overture {
                 .as_ref()
                 .expect("Can't ensure surface + context without a Glutin Display connection");
 
-            let template = Self::config_template(raw_window_handle);
+            let template = Self::config_template(window_handle);
             let config = unsafe {
                 glutin_display
                     .find_configs(template)
@@ -158,9 +160,8 @@ pub mod overture {
             println!("Picked a config with {} samples", config.num_samples());
 
             let (width, height): (u32, u32) = window.inner_size().into();
-            let raw_window_handle = window.raw_window_handle();
             let attrs = SurfaceAttributesBuilder::<WindowSurface>::new().build(
-                raw_window_handle,
+                window_handle,
                 NonZeroU32::new(width).unwrap(),
                 NonZeroU32::new(height).unwrap(),
             );
@@ -184,11 +185,8 @@ pub mod overture {
                     );
                 }
                 None => {
-                    let not_current_context = Self::create_compatible_gl_context(
-                        glutin_display,
-                        raw_window_handle,
-                        &config,
-                    );
+                    let not_current_context =
+                        Self::create_compatible_gl_context(glutin_display, window_handle, &config);
                     self.context = Some(
                         not_current_context
                             .make_current(&surface_state.surface)
@@ -215,9 +213,9 @@ pub mod overture {
             }
         }
 
-        fn resume<T>(
+        fn resume(
             &mut self,
-            event_loop: &EventLoopWindowTarget<T>,
+            event_loop: &ActiveEventLoop,
             models: &Vec<Model>,
             ui: &Vec<ui::Element>,
         ) {
@@ -238,24 +236,32 @@ pub mod overture {
             #[cfg(debug_assertions)]
             let mut left_mouse_button_pressed = false;
 
-            let mut key_input_vec: Vec<(VirtualKeyCode, ElementState, Box<dyn Fn(&mut Scene)>)> =
-                Vec::new();
+            let mut key_input_vec: Vec<(Key, ElementState, Box<dyn Fn(&mut Scene)>)> = Vec::new();
             let mut mouse_input_vec: Vec<(MouseButton, ElementState, Box<dyn Fn(&mut Scene)>)> =
                 Vec::new();
             let mut touch_input_vec: Vec<(TouchPhase, Box<dyn Fn(&mut Scene)>)> = Vec::new();
 
             let mut previous_frame_time = std::time::Instant::now();
+
+            // let mut imgui = imgui::Context::create();
+            // let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
+
             if let Some(event_loop) = self.event_loop.take() {
-                event_loop.run(move |event, event_loop, control_flow| {
+                let _ = event_loop.run(move |event, event_loop| {
                     if let Some(ref surface_state) = self.surface_state {
                         let (width, height): (u32, u32) = surface_state.window.inner_size().into();
                         if allowed_to_set_camera {
                             camera = Camera::new(width as f32, height as f32);
                             allowed_to_set_camera = false;
                         }
+
+                        // platform.attach_window(
+                        //     imgui.io_mut(),
+                        //     &surface_state.window,
+                        //     imgui_winit_support::HiDpiMode::Default,
+                        // );
                     }
 
-                    *control_flow = ControlFlow::Wait;
                     match event {
                         Event::Resumed => {
                             self.resume(&event_loop, &model_pipeline, &ui_pipeline);
@@ -263,42 +269,6 @@ pub mod overture {
                         Event::Suspended => {
                             self.surface_state = None;
                         }
-                        Event::RedrawRequested(_) => {
-                            let current_frame_time = std::time::Instant::now();
-                            let _timestep = current_frame_time
-                                .duration_since(previous_frame_time)
-                                .as_secs_f32();
-                            previous_frame_time = current_frame_time;
-
-                            //println!("{:?}ms", timestep * 1000.0);
-
-                            if let Some(ref surface_state) = self.surface_state {
-                                if let Some(ctx) = &self.context {
-                                    if let Some(ref mut renderer) = self.render_state {
-                                        renderer.draw(&world_color, &camera);
-
-                                        if let Err(err) = surface_state.surface.swap_buffers(ctx) {
-                                            println!(
-                                                "Failed to swap buffers after render: {}",
-                                                err
-                                            );
-                                        }
-                                    }
-                                    self.queue_redraw();
-                                }
-                            }
-                        }
-                        Event::UserEvent(custom_event) => match custom_event {
-                            CustomEvent::Keyboard(key, state, result) => {
-                                key_input_vec.push((key, state, result))
-                            }
-                            CustomEvent::Touch(touch, result) => {
-                                touch_input_vec.push((touch, result))
-                            }
-                            CustomEvent::Mouse(mouse, state, result) => {
-                                mouse_input_vec.push((mouse, state, result))
-                            }
-                        },
                         Event::WindowEvent {
                             event: WindowEvent::Touch(location),
                             ..
@@ -310,55 +280,101 @@ pub mod overture {
                             }
                         }
                         Event::WindowEvent { event, .. } => match event {
-                            WindowEvent::KeyboardInput { input, .. } => {
-                                if let Some(key) = input.virtual_keycode {
-                                    #[cfg(debug_assertions)]
-                                    match key {
-                                        VirtualKeyCode::W => {
+                            WindowEvent::RedrawRequested => {
+                                // let ui = imgui.frame();
+
+                                // ui.window("Hello world")
+                                //     .size([300.0, 100.0], imgui::Condition::FirstUseEver)
+                                //     .build(|| {
+                                //         ui.text("Hello world!");
+                                //         ui.text("こんにちは世界！");
+                                //         ui.text("This...is...imgui-rs!");
+                                //         ui.separator();
+                                //         let mouse_pos = ui.io().mouse_pos;
+                                //         ui.text(format!(
+                                //             "Mouse Position: ({:.1},{:.1})",
+                                //             mouse_pos[0], mouse_pos[1]
+                                //         ));
+                                //     });
+
+                                // imgui.render();
+
+                                let current_frame_time = std::time::Instant::now();
+                                let _timestep = current_frame_time
+                                    .duration_since(previous_frame_time)
+                                    .as_secs_f32();
+                                previous_frame_time = current_frame_time;
+
+                                //println!("{:?}ms", timestep * 1000.0);
+
+                                if let Some(ref surface_state) = self.surface_state {
+                                    if let Some(ctx) = &self.context {
+                                        if let Some(ref mut renderer) = self.render_state {
+                                            renderer.draw(&world_color, &camera);
+
+                                            if let Err(err) =
+                                                surface_state.surface.swap_buffers(ctx)
+                                            {
+                                                println!(
+                                                    "Failed to swap buffers after render: {}",
+                                                    err
+                                                );
+                                            }
+                                        }
+                                        self.queue_redraw();
+                                    }
+                                }
+                            }
+                            WindowEvent::KeyboardInput { event, .. } => {
+                                #[cfg(debug_assertions)]
+                                match event.physical_key {
+                                    PhysicalKey::Code(key_code) => match key_code {
+                                        KeyCode::KeyW => {
                                             camera.position += camera.speed * camera.orientation;
                                         }
-                                        VirtualKeyCode::A => {
+                                        KeyCode::KeyA => {
                                             camera.position += camera.speed
                                                 * -nalgebra_glm::normalize(&nalgebra_glm::cross(
                                                     &camera.orientation,
                                                     &camera.up,
                                                 ))
                                         }
-                                        VirtualKeyCode::S => {
+                                        KeyCode::KeyS => {
                                             camera.position -= camera.speed * camera.orientation
                                         }
-                                        VirtualKeyCode::D => {
+                                        KeyCode::KeyD => {
                                             camera.position += camera.speed
                                                 * nalgebra_glm::normalize(&nalgebra_glm::cross(
                                                     &camera.orientation,
                                                     &camera.up,
                                                 ))
                                         }
-                                        VirtualKeyCode::Space => {
+                                        KeyCode::Space => {
                                             camera.position += camera.speed * camera.up
                                         }
-                                        VirtualKeyCode::LControl => {
+                                        KeyCode::ControlLeft => {
                                             camera.position -= camera.speed * camera.up
                                         }
-                                        VirtualKeyCode::LShift => {
-                                            camera.speed = if input.state == ElementState::Pressed {
+                                        KeyCode::ShiftLeft => {
+                                            camera.speed = if event.state == ElementState::Pressed {
                                                 0.4
                                             } else {
                                                 0.1
                                             };
                                         }
-                                        _ => {}
-                                    }
-
-                                    for given_key in &key_input_vec {
-                                        match (input.state, key) {
-                                            (s, b) if s == given_key.1 && b == given_key.0 => {
-                                                (given_key.2)(&mut self);
-                                            }
-                                            _ => {}
-                                        }
-                                    }
+                                        _ => (),
+                                    },
+                                    _ => {}
                                 }
+
+                                // for given_key in &key_input_vec {
+                                //     match (event.state, event.logical_key) {
+                                //         (s, b) if s == given_key.1 && b == given_key.0 => {
+                                //             (given_key.2)(&mut self);
+                                //         }
+                                //         _ => {}
+                                //     }
+                                // }
                             }
                             WindowEvent::MouseInput { state, button, .. } => {
                                 #[cfg(debug_assertions)]
@@ -484,18 +500,28 @@ pub mod overture {
                                 }
                             }
                             WindowEvent::CloseRequested => {
-                                *control_flow = ControlFlow::Exit;
+                                event_loop.exit();
                             }
                             _ => {}
                         },
-                        _ => {}
+                        Event::UserEvent(custom_event) => match custom_event {
+                            CustomEvent::Keyboard(key, state, result) => {
+                                key_input_vec.push((key, state, result))
+                            }
+                            CustomEvent::Touch(touch, result) => {
+                                touch_input_vec.push((touch, result))
+                            }
+                            CustomEvent::Mouse(mouse, state, result) => {
+                                mouse_input_vec.push((mouse, state, result))
+                            }
+                        },
+                        _ => (),
                     }
                 });
             }
         }
     }
 
-    pub use winit::event_loop::EventLoopBuilder;
     #[cfg(target_os = "android")]
     pub use winit::platform::android::activity::AndroidApp;
     #[cfg(target_os = "android")]

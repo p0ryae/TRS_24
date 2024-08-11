@@ -5,9 +5,10 @@ use trs_24::{overture::*, types::*};
 #[no_mangle]
 pub fn android_main(app: AndroidApp) {
     // Creates an event loop for android platforms only.
-    let event_loop = EventLoopBuilder::<CustomEvent>::with_user_event()
+    let event_loop = EventLoop::<CustomEvent>::with_user_event()
         .with_android_app(app)
-        .build();
+        .build()
+        .unwrap();
     // Create a proxy from the eventloop for custom Events
     let event_loop_proxy = event_loop.create_proxy();
 

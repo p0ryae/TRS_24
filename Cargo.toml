@@ -1,25 +1,33 @@
 [package]
 name = "trs_24"
 version = "0.1.6"
+rust-version = "1.75.0"
 edition = "2021"
 keywords = ["gamedev", "graphics", "android", "trs_24", "engine"]
 categories = ["game-engines", "game-development", "graphics", "rendering"]
 license = "MIT OR Apache-2.0"
 description = "An OpenGL-Powered Game Engine (OpenGL 2.0+)"
 repository = "https://github.com/p0ryae/TRS_24"
-exclude = [
-    "assets/*",
-    "android/*"
-]
+exclude = ["assets/*", "android/*"]
+
+[features]
+default = ["egl", "glx", "x11", "wayland", "wgl"]
+egl = ["glutin/egl"]
+glx = ["glutin/glx", "x11"]
+wgl = ["glutin/wgl"]
+x11 = ["glutin/x11", "winit/x11"]
+wayland = ["glutin/wayland", "winit/wayland"]
 
 [dependencies]
-winit = { version = "0.28.7", features = ["android-native-activity"] }
-glutin = "0.31.2"
-raw-window-handle = "0.5.0"
+winit = { version = "0.30.0", default-features = false, features = ["rwh_06"] }
+glutin = { version = "0.32.0", default-features = false }
+raw-window-handle = "0.6.2"
 stb_image_rust = "2.27.2"
 nalgebra-glm = "0.18.0"
 json = "0.12.4"
 freetype-rs = "0.34.1"
+imgui = "0.12.0"
+imgui-winit-support = { git = "https://github.com/julcst/imgui-winit-support", rev = "29584c863c5517a7f30e09205b84e1601f4ddb92" }
 
 [build-dependencies]
 gl_generator = "0.14"

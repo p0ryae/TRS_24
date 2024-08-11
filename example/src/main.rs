@@ -2,7 +2,7 @@ use trs_24::{overture::*, types::*};
 
 pub fn main() {
     // Creates an event loop for non-android platforms.
-    let event_loop = EventLoopBuilder::<CustomEvent>::with_user_event().build();
+    let event_loop = EventLoop::<CustomEvent>::with_user_event().build().unwrap();
     // Create a proxy from the eventloop for custom Events
     let event_loop_proxy = event_loop.create_proxy();
 
